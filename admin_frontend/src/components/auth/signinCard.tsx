@@ -1,44 +1,119 @@
-import Link from "next/link";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { LockKeyholeOpen, Mail } from "lucide-react";
+"use client"
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LoginForm } from "./LoginForm";
+import { useMutation } from "@tanstack/react-query";
+import axios, { AxiosError } from "axios"; // Import axios
+import { Setup2FA } from "./setup2FA";
+import { Verify2FA } from "./verify2FA";
+
+type AuthStep = "LOGIN" | "SETUP_2FA" | "VERIFY_2FA";
+
+// Define the response types for better type safety
+interface LoginResponse {
+    requireSetup: boolean;
+    require2fa: boolean;
+    otpauth_url?: string; // Only present if requireSetup is true
+    tempToken?: string;   // Likely needed for the next step to identify the session
+}
 
 export const SigninCard = () => {
+    const router = useRouter();
+    const [step, setStep] = useState<AuthStep>("LOGIN");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [otpCode, setOtpCode] = useState("");
+    const [qrCodeUrl, setQrCodeUrl] = useState("otpauth://totp/RealBros:admin@test.com?secret=JBSWY3DPEHPK3PXP&issuer=RealBros");
+    // use useState("") as this is for development purposes and replace by unique_url comes from backend
+
+    const getErrorMessage = (error: unknown) => {
+        if (error instanceof AxiosError) {
+            return error.response?.data?.message || error.message || "An error occurred";
+        }
+        return "An unexpected error occurred";
+    };
+
+    //Mutation for Login
+    const loginMutation = useMutation({
+        mutationFn: async () => {
+            // Adjust the URL to match actual backend api endpoint
+            const response = await axios.post<LoginResponse>('/api/auth/login', {
+                email,
+                password
+            });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            if (data.requireSetup && data.otpauth_url) {
+                setQrCodeUrl(data.otpauth_url);
+                setStep("SETUP_2FA");
+            } else if (data.require2fa) {
+                setStep("VERIFY_2FA");
+            } else {
+                router.push("/dashboard");
+            }
+        },
+        onError: (error) => {
+            console.error(error);
+        }
+    });
+
+    // Mutation for Verify OTP
+    const verifyOtpMutation = useMutation({
+        mutationFn: async () => {
+            // Determine which endpoint to hit based on the current step
+            const endpoint = step === "SETUP_2FA"
+                ? '/api/auth/2fa/setup/verify'
+                : '/api/auth/2fa/verify';
+
+            // need to send the email or a temp token along with the code
+            const response = await axios.post(endpoint, {
+                email,
+                token: otpCode
+            });
+            return response.data;
+        },
+        onSuccess: () => {
+            router.push("/dashboard");
+        }
+    });
+
+    if (step === "SETUP_2FA") {
+        return (
+            <Setup2FA
+                qrCodeUrl={qrCodeUrl}
+                otpCode={otpCode}
+                onOtpChange={setOtpCode}
+                onVerify={() => verifyOtpMutation.mutate()}
+                isPending={verifyOtpMutation.isPending}
+                error={verifyOtpMutation.isError ? getErrorMessage(verifyOtpMutation.error) : null}
+            />
+        );
+    }
+    if (step === "VERIFY_2FA") {
+        return (
+            <Verify2FA
+                otpCode={otpCode}
+                onOtpChange={setOtpCode}
+                onVerify={() => verifyOtpMutation.mutate()}
+                onBack={() => setStep("LOGIN")}
+                isPending={verifyOtpMutation.isPending}
+                error={verifyOtpMutation.isError ? getErrorMessage(verifyOtpMutation.error) : null}
+            />
+        );
+    }
+
+    // default login
     return (
-        <div className="flex items-center justify-center">
-            <div className="w-full max-w-md">
-                <h1 className="text-center text-[24px] font-semibold">
-                    Sign In
-                </h1>
-                <div className="flex flex-col gap-4 mt-12">
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5  text-blue-500" />
-                        <Input
-                            type="email"
-                            placeholder="Enter Email / number"
-                            className="pl-10 py-6"
-                        />
-                    </div>
-                    {/* Password with icon */}
-                    <div className="relative">
-                        <LockKeyholeOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5  text-blue-500" />
-                        <Input
-                            type="password"
-                            placeholder="Enter password"
-                            className="pl-10 py-6"
-                        />
-                    </div>
-                    <Button className="rounded-3xl py-6 text-[16px]">
-                        Sign in
-                    </Button>
-                </div>
-                {/* Reset password link */}
-                <div className="text-center text-[15px] font-bold mt-4 text-blue-600">
-                    <Link href="/reset-password">
-                        Reset your password
-                    </Link>
-                </div>
-            </div>
-        </div>
+        <LoginForm
+            email={email}
+            password={password}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onSubmit={() => loginMutation.mutate()}
+            isPending={loginMutation.isPending}
+            error={loginMutation.error ? getErrorMessage(loginMutation.error) : null}
+        />
     );
 };
