@@ -39,6 +39,7 @@ model User {
   properties    Property[]
   otps          Otp[]
   refreshTokens RefreshToken[]
+  supportTickets CustomerSupport[]
 
   @@index([id, email])
   @@map("users")
@@ -275,4 +276,31 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// Customer Support
+
+enum TicketStatus {
+  OPEN
+  CLOSED
+}
+
+model CustomerSupport {
+  id               String       @id @default(cuid())
+  name             String
+  phoneNo          String
+  description      String       @db.Text
+  isRequestForCall Boolean      @default(false)
+  ticketStatus     TicketStatus @default(OPEN)
+  
+  // User info
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([ticketStatus])
+  @@map("customer_support")
 }

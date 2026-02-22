@@ -6,7 +6,7 @@ The Property Filter API allows users to search and filter properties based on mu
 ## Endpoint
 
 ### Filter Properties
-**GET** `/api/property/filter`
+**GET** `/api/v1/property/filter`
 
 **Authentication:** Not required (public endpoint)
 
@@ -116,27 +116,27 @@ The Property Filter API allows users to search and filter properties based on mu
 
 ### 1. Filter by Category and Property Type
 ```
-GET /api/property/filter?category=Residential&propertyType=FLAT&propertyType=DUPLEX
+GET /api/v1/property/filter?category=Residential&propertyType=FLAT&propertyType=DUPLEX
 ```
 
 ### 2. Filter by Price Range
 ```
-GET /api/property/filter?priceMin=5000000&priceMax=10000000
+GET /api/v1/property/filter?priceMin=5000000&priceMax=10000000
 ```
 
 ### 3. Filter by Furnishing Status
 ```
-GET /api/property/filter?furnishingStatus=FullyFurnished&furnishingStatus=SemiFurnished
+GET /api/v1/property/filter?furnishingStatus=FullyFurnished&furnishingStatus=SemiFurnished
 ```
 
 ### 4. Complete Filter Example (matching the mobile app)
 ```
-GET /api/property/filter?category=Residential&propertyType=FLAT&furnishingStatus=FullyFurnished&priceMin=4100000&priceMax=10000000&city=Mumbai&sortBy=price_asc&page=1&limit=20
+GET /api/v1/property/filter?category=Residential&propertyType=FLAT&furnishingStatus=FullyFurnished&priceMin=4100000&priceMax=10000000&city=Mumbai&sortBy=price_asc&page=1&limit=20
 ```
 
 ### 5. Filter with Location and Rooms
 ```
-GET /api/property/filter?city=Delhi&numberOfRooms=3&numberOfBathrooms=2&propertyFacing=East&sortBy=created_desc
+GET /api/v1/property/filter?city=Delhi&numberOfRooms=3&numberOfBathrooms=2&propertyFacing=East&sortBy=created_desc
 ```
 
 ---
@@ -275,7 +275,7 @@ queryString.append('page', filters.page);
 queryString.append('limit', filters.limit);
 queryString.append('sortBy', filters.sortBy);
 
-const response = await fetch(`/api/property/filter?${queryString.toString()}`);
+const response = await fetch(`/api/v1/property/filter?${queryString.toString()}`);
 const data = await response.json();
 
 console.log('Filtered Properties:', data.data);
@@ -313,7 +313,7 @@ const FilterProperties = () => {
     queryString.append('page', filters.page);
     queryString.append('limit', filters.limit);
 
-    const response = await fetch(`/api/property/filter?${queryString}`);
+    const response = await fetch(`/api/v1/property/filter?${queryString}`);
     const data = await response.json();
     
     if (data.success) {
@@ -358,11 +358,11 @@ const FilterProperties = () => {
 
 ```bash
 # Basic filter
-curl "http://localhost:3000/api/property/filter?category=Residential&propertyType=FLAT"
+curl "http://localhost:4000/api/v1/property/filter?category=Residential&propertyType=FLAT"
 
 # With price range
-curl "http://localhost:3000/api/property/filter?priceMin=5000000&priceMax=10000000&sortBy=price_asc"
+curl "http://localhost:4000/api/v1/property/filter?priceMin=5000000&priceMax=10000000&sortBy=price_asc"
 
 # Multiple filters
-curl "http://localhost:3000/api/property/filter?category=Residential&propertyType=FLAT&propertyType=DUPLEX&furnishingStatus=FullyFurnished&city=Mumbai&page=1&limit=20"
+curl "http://localhost:4000/api/v1/property/filter?category=Residential&propertyType=FLAT&propertyType=DUPLEX&furnishingStatus=FullyFurnished&city=Mumbai&page=1&limit=20"
 ```
