@@ -25,6 +25,74 @@ async function getRoleManagement(): Promise<RoleManagement[]> {
             email: "jane.smith@example.com",
             role: "Viewer",
         },
+        {
+            username: "Uday Kumar",
+            email: "uday@example.com",
+            role: "Super Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "John Doe",
+            email: "john.doe@example.com",
+            role: "Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "Jane Smith",
+            email: "jane.smith@example.com",
+            role: "Viewer",
+        },
+        {
+            username: "Uday Kumar",
+            email: "uday@example.com",
+            role: "Super Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "John Doe",
+            email: "john.doe@example.com",
+            role: "Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "Jane Smith",
+            email: "jane.smith@example.com",
+            role: "Viewer",
+        },
+        {
+            username: "Uday Kumar",
+            email: "uday@example.com",
+            role: "Super Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "John Doe",
+            email: "john.doe@example.com",
+            role: "Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "Jane Smith",
+            email: "jane.smith@example.com",
+            role: "Viewer",
+        },
+        {
+            username: "Uday Kumar",
+            email: "uday@example.com",
+            role: "Super Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "John Doe",
+            email: "john.doe@example.com",
+            role: "Admin",
+            blockDate: "2021-01-01",
+        },
+        {
+            username: "Jane Smith",
+            email: "jane.smith@example.com",
+            role: "Viewer",
+        },
     ]
 }
 

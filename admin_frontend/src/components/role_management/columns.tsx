@@ -28,7 +28,7 @@ export const columns: ColumnDef<RoleManagement>[] = [
         },
         cell: ({ row }) => {
             const user = row.original
-            return <div className="font-medium">{user.username}</div>
+            return <div className="font-medium pl-4">{user.username}</div>
         },
     },
     {

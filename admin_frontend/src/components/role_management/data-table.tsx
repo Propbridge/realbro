@@ -8,11 +8,10 @@ import {
     getPaginationRowModel,
     getFilteredRowModel,
     SortingState,
-    getSortedRowModel
+    getSortedRowModel,
 } from "@tanstack/react-table";
 
 import { Input } from "@/components/ui/input";
-
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -28,6 +27,8 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Search } from "lucide-react";
+
+import { DataTablePagination } from "./data-table-pagination"
 
 export function DataTable<TData, TValue>({
     columns,
@@ -64,12 +65,11 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center py-4">
                 <div className="relative w-full max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-blue-500" />
-
                     <Input
                         placeholder="Search Anything"
                         value={globalFilter}
                         onChange={(e) => setGlobalFilter(e.target.value)}
-                        className="h-10 pl-9 border-2"
+                        className="h-10 pl-9 border-2 bg-white"
                     />
                 </div>
             </div>
@@ -77,7 +77,7 @@ export function DataTable<TData, TValue>({
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow className="bg-zinc-200" key={headerGroup.id}>
+                            <TableRow className="bg-[#F1F7FE]" key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
                                         <TableHead className="font-medium text-sm" key={header.id}>
@@ -93,7 +93,7 @@ export function DataTable<TData, TValue>({
                             </TableRow>
                         ))}
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="bg-white">
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
@@ -117,6 +117,7 @@ export function DataTable<TData, TValue>({
                     </TableBody>
                 </Table>
             </div>
+            <DataTablePagination table={table} />
         </div>
     )
 }
