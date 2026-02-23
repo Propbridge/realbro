@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Eye, Pencil, Trash2, OctagonMinus } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 
 export type RoleManagement = {
     username: string;
@@ -14,7 +15,17 @@ export type RoleManagement = {
 export const columns: ColumnDef<RoleManagement>[] = [
     {
         accessorKey: "username",
-        header: "User Name",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    User Name
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
         cell: ({ row }) => {
             const user = row.original
             return <div className="font-medium">{user.username}</div>
@@ -22,7 +33,17 @@ export const columns: ColumnDef<RoleManagement>[] = [
     },
     {
         accessorKey: "email",
-        header: "Email",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Email
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
         cell: ({ row }) => {
             const user = row.original
             return <div className="font-medium text-blue-500">{user.email}</div>
