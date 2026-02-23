@@ -26,9 +26,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Search } from "lucide-react";
+import { Search,PenLineIcon } from "lucide-react";
+import { Button } from "../ui/button";
 
 import { DataTablePagination } from "./data-table-pagination"
+import { ExportButton } from "./exportButton";
+import { useRouter } from "next/navigation";
 
 export function DataTable<TData, TValue>({
     columns,
@@ -36,7 +39,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
     const [globalFilter, setGlobalFilter] = React.useState("");
     const [sorting, setSorting] = React.useState<SortingState>([])
-
+    const router = useRouter();
 
     const table = useReactTable({
         data,
@@ -62,7 +65,9 @@ export function DataTable<TData, TValue>({
 
     return (
         <div>
-            <div className="flex items-center py-4">
+            <div className="flex items-center py-4 gap-8">
+                <h1 className="font-medium text-[20px] p-2 ">Admin Staff</h1>
+                {/* Search Input Box  */}
                 <div className="relative w-full max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-blue-500" />
                     <Input
@@ -72,6 +77,13 @@ export function DataTable<TData, TValue>({
                         className="h-10 pl-9 border-2 bg-white"
                     />
                 </div>
+                <ExportButton />
+                <Button onClick={() => {
+                    router.push("/role-management/add-new-staff");
+                }}>
+                    <PenLineIcon className="size-4 " />
+                    Add New Staff
+                </Button>
             </div>
             <div className="overflow-hidden rounded-md border">
                 <Table>

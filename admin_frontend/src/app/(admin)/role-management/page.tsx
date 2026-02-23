@@ -100,7 +100,7 @@ export default async function RoleManagement() {
     const data = await getRoleManagement();
     return (
         <div>
-            <h1 className="font-medium text-[20px] p-2 mb-4">Admin Staff</h1>
+
             <DataTable columns={columns} data={data}/>
         </div>
     )
