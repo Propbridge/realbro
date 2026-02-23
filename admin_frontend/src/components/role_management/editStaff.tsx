@@ -6,7 +6,7 @@ import { Input } from "../ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
-import { X, Trash2, Pencil } from "lucide-react"
+import { X, Trash2, Pencil, OctagonMinus, XIcon } from "lucide-react"
 import { Label } from "@/components/ui/label"
 
 const roles = [
@@ -27,7 +27,7 @@ const roles = [
     },
 ]
 
-export function AddNewStaff() {
+export function EditStaff() {
     return (
         <div className="p-6">
             <Card className="relative max-w-5xl">
@@ -37,10 +37,10 @@ export function AddNewStaff() {
 
                 <CardHeader className="pb-0">
                     <CardTitle className="text-xl font-semibold">
-                        Add New Admin Staff
+                        Edit Details
                     </CardTitle>
                     <CardDescription>
-                        Create an access profile for your internal staff.
+                        Update details of admin staff.
                     </CardDescription>
                 </CardHeader>
 
@@ -133,13 +133,17 @@ export function AddNewStaff() {
                 </CardContent>
 
                 <CardFooter className="justify-end gap-3 px-6 mb-3">
-                    <Button variant="outline" className="gap-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
-                        <Trash2 className="size-4" />
+                    <Button variant="outline" className="gap-2 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                        <OctagonMinus className="size-4 text-orange-500" />
+                        Block User
+                    </Button>
+                    <Button variant="outline" className="gap-2 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                        <XIcon className="size-5 text-red-500" />
                         Cancel
                     </Button>
                     <Button className="gap-2 bg-blue-500 hover:bg-blue-700 text-white">
                         <Pencil className="size-4" />
-                        Create Admin Staff
+                        Update Changes
                     </Button>
                 </CardFooter>
             </Card>
