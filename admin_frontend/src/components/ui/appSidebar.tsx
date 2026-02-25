@@ -50,8 +50,8 @@ const items = [
         url: "#",
         icon: User,
         children: [
-            { title: "All Users", url: "/users/all", icon:Users2 },
-            { title: "Blocked Users", url: "/users/blocked", icon: OctagonMinus },
+            { title: "All Users", url: "/user-management/all-users", icon:Users2 },
+            { title: "Blocked Users", url: "/user-management/blocked-users", icon: OctagonMinus },
         ],
     },
     { title: "Appointments", url: "#", icon: Calendar },

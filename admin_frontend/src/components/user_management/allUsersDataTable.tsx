@@ -9,15 +9,9 @@ import {
     getFilteredRowModel,
     SortingState,
     getSortedRowModel,
-} from "@tanstack/react-table";
+} from "@tanstack/react-table"
 
-import { Input } from "@/components/ui/input";
-
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
-}
-
+import { Input } from "@/components/ui/input"
 import {
     Table,
     TableBody,
@@ -26,20 +20,22 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Search, PenLineIcon } from "lucide-react";
-import { Button } from "../ui/button";
+import { Search, SlidersHorizontal, ArrowUpDown, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
+import { ExportButton } from "@/components/role_management/exportButton"
 
-import { DataTablePagination } from "../ui/data-table-pagination"
-import { ExportButton } from "./exportButton";
-import { useRouter } from "next/navigation";
+interface DataTableProps<TData, TValue> {
+    columns: ColumnDef<TData, TValue>[]
+    data: TData[]
+}
 
-export function DataTable<TData, TValue>({
+export function AllUsersDataTable<TData, TValue>({
     columns,
     data,
 }: DataTableProps<TData, TValue>) {
-    const [globalFilter, setGlobalFilter] = React.useState("");
+    const [globalFilter, setGlobalFilter] = React.useState("")
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const router = useRouter();
 
     const table = useReactTable({
         data,
@@ -58,32 +54,35 @@ export function DataTable<TData, TValue>({
             const search = filterValue.toLowerCase()
             const username = String(row.getValue("username") ?? "").toLowerCase()
             const email = String(row.getValue("email") ?? "").toLowerCase()
-            const role = String(row.getValue("role") ?? "").toLowerCase()
-            return username.includes(search) || email.includes(search) || role.includes(search)
+            const kycStatus = String(row.getValue("kycStatus") ?? "").toLowerCase()
+            return username.includes(search) || email.includes(search) || kycStatus.includes(search)
         },
-    });
+    })
 
     return (
         <div>
-            <div className="flex items-center py-4 gap-8 justify-between">
-                <h1 className="font-medium text-[20px] p-2 pl-4">Admin Staff</h1>
-                {/* Search Input Box  */}
+            <div className="flex items-center py-4 gap-4 justify-between">
+                <h1 className="font-semibold text-xl whitespace-nowrap pl-4">Users</h1>
                 <div className="flex items-center gap-4">
                     <div className="relative w-full max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-blue-500" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                         <Input
-                            placeholder="Search Anything"
+                            placeholder="Search anything"
                             value={globalFilter}
                             onChange={(e) => setGlobalFilter(e.target.value)}
                             className="h-10 pl-9 border-2 bg-white"
                         />
                     </div>
                     <ExportButton />
-                    <Button onClick={() => {
-                        router.push("/role-management/add-new-staff");
-                    }}>
-                        <PenLineIcon className="size-4 " />
-                        Add New Staff
+                    <Button variant="outline" className="gap-2 shadow-none border-2 h-10">
+                        <SlidersHorizontal className="size-4" />
+                        Filters
+                        <ChevronDown className="size-4" />
+                    </Button>
+                    <Button variant="outline" className="gap-2 shadow-none border-2 h-10">
+                        <ArrowUpDown className="size-4" />
+                        Sort by
+                        <ChevronDown className="size-4" />
                     </Button>
                 </div>
             </div>
@@ -92,18 +91,16 @@ export function DataTable<TData, TValue>({
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow className="bg-[#F1F7FE]" key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead className="font-medium text-sm" key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                        </TableHead>
-                                    )
-                                })}
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead className="font-medium text-sm" key={header.id}>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
