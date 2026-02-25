@@ -14,11 +14,10 @@ export type UserActionsAndDetailsInterface = {
     zip: string
 };
 
-// sara interface iske props me dalke fullUsers se input kra dena hai isme
-export function UserActionsAndDetails({ user }: { user: UserActionsAndDetailsInterface }) {
+export function UserActionsAndDetails() {
     return (
-        <div className="flex flex-col items-center gap-4 mt-4">
-            <div className="flex gap-4 w-full ml-16 justify-start ">
+        <div className="flex flex-col gap-4 mt-4">
+            <div className="flex gap-4 w-full justify-start">
                 <Avatar className="h-16 w-16">
                     <AvatarImage src="https://github.com/shadcn.png" />
                     <AvatarFallback >CN</AvatarFallback>
@@ -30,16 +29,16 @@ export function UserActionsAndDetails({ user }: { user: UserActionsAndDetailsInt
                     <Verified />
                 </div>
             </div>
-            <div className="flex gap-2 items-center">
-                <Button variant="outline" className="gap-2 h-12 w-36 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+            <div className="flex gap-2 items-center flex-wrap">
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
                     <OctagonMinus className="size-5 text-orange-500" />
                     Block User
                 </Button>
-                <Button variant="outline" className="gap-2 h-12 w-36 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
                     <Gem className="size-5 text-green-500" />
                     <p>Send Gems</p>
                 </Button>
-                <Button variant="outline" className="gap-2 h-12 w-36 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
                     <PenLine className="size-5 text-blue-500" />
                     <p>Edit User</p>
                 </Button>
@@ -52,33 +51,33 @@ export function UserActionsAndDetails({ user }: { user: UserActionsAndDetailsInt
             </div>
             <div>
                 <h1 className="font-medium py-4 px-2 text-xl">User Details</h1>
-                <div className="flex gap-2 m">
-                    <div className="border-2 p-2 px-4 w-36 rounded-md bg-white">
+                <div className="grid grid-cols-4 gap-2">
+                    <div className="border-2 p-2 px-3 rounded-md bg-white">
                         <div className="flex flex-col gap-1">
                             <Gem className="size-5 text-green-500" />
                             <p className="text-lg font-bold">151,752</p>
                             <p className="text-[12px]">Gems in Wallet</p>
                         </div>
                     </div>
-                    <div className="border-2 p-2 px-4 w-36 rounded-md bg-white">
+                    <div className="border-2 p-2 px-3 rounded-md bg-white">
                         <div className="flex flex-col gap-1">
                             <Building2 className="size-5 text-green-500" />
                             <p className="text-lg font-bold">10</p>
                             <p className="text-[12px]">Total Properties</p>
                         </div>
                     </div>
-                    <div className="border-2 p-2 px-4 w-36 rounded-md bg-white">
+                    <div className="border-2 p-2 px-3 rounded-md bg-white">
                         <div className="flex flex-col gap-1">
                             <Handshake className="size-5 text-blue-500" />
                             <p className="text-lg font-bold">4</p>
                             <p className="text-[12px]">Sold to RealBro</p>
                         </div>
                     </div>
-                    <div className="border-2 p-2 px-4 w-36 rounded-md bg-white">
+                    <div className="border-2 p-2 px-3 rounded-md bg-white">
                         <div className="flex flex-col gap-1">
                             <IndianRupee className="size-5 text-green-500" />
                             <p className="text-lg font-bold">1.2 Cr</p>
-                            <p className="text-[12px]">Listed Prop. Worth</p>
+                            <p className="text-[12px]">Prop. Worth</p>
                         </div>
                     </div>
                 </div>

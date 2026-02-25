@@ -1,10 +1,9 @@
-import { FullUserDetails } from "@/components/userDetails/fullUser";
-import { UserListedProperties } from "@/components/userDetails/userListedProperties";
+import { FullUserDetails } from "@/components/userDetails/fullUser"
 
 export default function UserPage() {
     return (
-        <div>
-            <FullUserDetails/>
+        <div className="p-4">
+            <FullUserDetails />
         </div>
     )
 }
