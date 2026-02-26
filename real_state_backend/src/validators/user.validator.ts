@@ -13,7 +13,7 @@ export const signupSchema = z.object({
     gender: z.enum(["MALE", "FEMALE", "OTHER"]),
     avatar: z.string().url("Invalid avatar URL").optional(),
     avatarKey: z.string().optional(),
-    referrerId: z.string().optional(),
+    referrerId: z.string().min(1, "Referral code is required"),
     // Aadhar Section
     aadharNo: z.string().regex(/^\d{12}$/, "Aadhar must be 12 digits"),
     kycAadharImageUrl: z.string().url("Invalid Aadhar image URL"),

@@ -22,18 +22,15 @@ export async function signup(req: Request, res: Response) {
         if (!req.body) {
             return res.status(404).json("Please fill all the details")
         }
-        //check if referral code is provided
-        let referrer = null;
-        if (referrerId) {
-            referrer = await prisma.user.findUnique({
-                where: { referralCode: referrerId }
+        //check if referral code is valid
+        const referrer = await prisma.user.findUnique({
+            where: { referralCode: referrerId }
+        });
+        if (!referrer) {
+            return res.status(400).json({
+                error: "Invalid referrer Id. Please use a valid referrer ID",
+                field: "referrerId"
             });
-            if (!referrer) {
-                return res.status(400).json({
-                    error: "Invalid referrer Id. Please use a valid referrer ID",
-                    field: "referrerId"
-                });
-            }
         }
         let userReferralCode = generateReferralCode(firstName);
         // create user
