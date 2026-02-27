@@ -12,6 +12,7 @@ import uploadRoutes from "./routes/upload/upload.route"
 import supportRoutes from "./routes/support/support.route"
 import savedPropertyRoutes from "./routes/savedProperty/savedProperty.route"
 import metadataRoutes from "./routes/metadata/metadata.route"
+import appointmentRoutes from "./routes/appointment/appointment.route"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +41,7 @@ app.use(`${process.env.API_VERSION}/upload`,uploadRoutes);
 app.use(`${process.env.API_VERSION}/support`,supportRoutes);
 app.use(`${process.env.API_VERSION}/saved-properties`,savedPropertyRoutes);
 app.use(`${process.env.API_VERSION}/metadata`,metadataRoutes);
+app.use(`${process.env.API_VERSION}/appointments`,appointmentRoutes);
 
 app.get("/health",(req,res)=>{
     res.status(200).json({

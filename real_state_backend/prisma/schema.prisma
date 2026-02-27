@@ -41,6 +41,7 @@ model User {
   refreshTokens RefreshToken[]
   supportTickets CustomerSupport[]
   savedProperties SavedProperty[]
+  appointments  Appointment[]
 
   @@index([id, email])
   @@map("users")
@@ -180,6 +181,7 @@ model Property {
   user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   media  PropertyMedia[]
   savedBy SavedProperty[]
+  appointments Appointment[]
 
   @@index([userId])
   @@index([propertyType])
@@ -323,4 +325,35 @@ model SavedProperty {
   @@index([userId])
   @@index([propertyId])
   @@map("saved_properties")
+}
+
+// Appointments (Property viewing appointments)
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  userId            String
+  propertyId        String
+  appointmentDate   DateTime
+  appointmentTime   String // Stored as string (e.g., "10:00 AM", "14:30")
+  status            AppointmentStatus @default(SCHEDULED)
+  notes             String?           @db.Text
+  isPreBooked       Boolean           @default(false) // Whether user has pre-booked this appointment
+  
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property          Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
 }
