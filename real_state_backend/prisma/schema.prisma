@@ -13,16 +13,16 @@ datasource db {
 }
 
 model SuperAdmin {
-  id        String   @id @default(cuid())
-  firstName String?
-  lastName  String?
-  email     String   @unique
-  passwordHash  String
-  twoFactorSecret String?
-  isTwoFactorEnabled Boolean @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  firstName          String?
+  lastName           String?
+  email              String   @unique
+  passwordHash       String
+  twoFactorSecret    String?
+  isTwoFactorEnabled Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([isActive])
   @@map("super_admins")
@@ -36,20 +36,23 @@ enum StaffRole {
 }
 
 model Staff {
-  id        String    @id @default(cuid())
-  firstName String
-  lastName  String
-  age       Int?
-  gender    Gender?
-  phone     String?   @unique
-  email     String    @unique
-  passwordHash String?
-  role      StaffRole
-  twoFactorSecret String?
-  isTwoFactorEnabled Boolean @default(false)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                 String           @id @default(cuid())
+  firstName          String
+  lastName           String
+  age                Int?
+  gender             Gender?
+  phone              String?          @unique
+  email              String           @unique
+  passwordHash       String?
+  role               StaffRole
+  twoFactorSecret    String?
+  isTwoFactorEnabled Boolean          @default(false)
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  requestedGemRequests GemRequest[] @relation("GemRequestedBy")
+  reviewedGemRequests GemRequest[] @relation("GemReviewedBy")
+  gemTransactions GemTransaction[] @relation("GemTransactionCreatedBy")
 
   @@index([role])
   @@index([isActive])
@@ -87,6 +90,9 @@ model User {
   supportTickets  CustomerSupport[]
   savedProperties SavedProperty[]
   appointments    Appointment[]
+  gemTransactions GemTransaction[]
+  gemRequestsAsTarget GemRequest[] @relation("GemRequestTargetUser")
+  gemRequestsAsReferral GemRequest[] @relation("GemRequestReferralUser")
 
   @@index([id, email])
   @@map("users")
@@ -227,6 +233,7 @@ model Property {
   media        PropertyMedia[]
   savedBy      SavedProperty[]
   appointments Appointment[]
+  gemRequests  GemRequest[]    @relation("GemRequestTargetProperty")
 
   @@index([userId])
   @@index([propertyType])
@@ -294,6 +301,7 @@ enum OtpType {
   EMAIL
   PHONE
   RESET_PASSWORD
+  GEM_TXN
 }
 
 enum Gender {
@@ -401,4 +409,100 @@ model Appointment {
   @@index([appointmentDate])
   @@index([status])
   @@map("appointments")
+}
+
+enum GemRequestType {
+  EXCLUSIVE_ACQUISITION_REWARD
+  EXCLUSIVE_SALE_REWARD
+  REDEMPTION
+}
+
+enum GemRequestStatus {
+  DRAFT
+  PENDING_SUPERADMIN
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum GemTxnType {
+  CREDIT
+  DEBIT
+}
+
+enum GemTxnReason {
+  ACQUISITION_REWARD
+  EXCLUSIVE_SALE_REWARD
+  REFERRAL_BONUS_5_PERCENT
+  REDEMPTION
+}
+
+model GemRequest {
+  id                 String           @id @default(cuid())
+  type               GemRequestType
+  status             GemRequestStatus @default(DRAFT)
+  // who initiated and who approved/rejected
+  requestedByStaffId String
+  reviewedByStaffId  String?
+  requestedByStaff   Staff            @relation("GemRequestedBy", fields: [requestedByStaffId], references: [id])
+  reviewedByStaff    Staff?           @relation("GemReviewedBy", fields: [reviewedByStaffId], references: [id])
+
+  // target user and optional referral beneficiary
+  userId         String
+  user           User    @relation("GemRequestTargetUser", fields: [userId], references: [id], onDelete: Cascade)
+  referralUserId String?
+  referralUser   User?   @relation("GemRequestReferralUser", fields: [referralUserId], references: [id], onDelete: SetNull)
+
+  // optional property context
+  propertyId String?
+  property   Property? @relation("GemRequestTargetProperty", fields: [propertyId], references: [id], onDelete: SetNull)
+
+
+  // values snapshot at request time
+  baseGems          Int
+  referralPercent   Float   @default(5.0)
+  referralGems      Int     @default(0)
+  totalGems         Int     @default(0)
+  // for redemption
+  redemptionEtaDays Int?
+  failureReason     String?
+  comment           String?
+
+  // OTP proof (store hash if you want stronger audit)
+  otpVerifiedAt        DateTime?
+  otpVerifiedByStaffId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions GemTransaction[]
+
+  @@index([status, type])
+  @@index([userId, createdAt])
+  @@index([propertyId])
+  @@map("gem_requests")
+}
+
+model GemTransaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  requestId String
+  request   GemRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  txnType       GemTxnType
+  reason        GemTxnReason
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+
+  createdByStaffId String?
+  createdByStaff   Staff?   @relation("GemTransactionCreatedBy", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@map("gem_transactions")
 }
