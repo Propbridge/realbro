@@ -341,7 +341,6 @@ model ExclusiveProperty {
 
   // Exclusive-specific
   fixedRewardGems   Int
-  migratedByStaffId String?
   migratedAt        DateTime  @default(now())
   soldOutAt         DateTime?
   notes             String?
