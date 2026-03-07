@@ -188,6 +188,55 @@ export const addDraftPropertySchema = z.object({
     media: z.array(propertyMediaSchema).optional()
 });
 
+export const exclusivePropertyStatusEnum = ["ACTIVE", "SOLD_OUT", "ARCHIVED"] as const;
+
+export const createExclusivePropertySchema = z.object({
+    fixedRewardGems: z.number().int().min(0, "fixedRewardGems is required and must be non-negative"),
+    notes: z.string().optional(),
+    status: z.enum(exclusivePropertyStatusEnum).optional(),
+    // All property fields optional - override copied values from source property
+    title: z.string().min(1).optional(),
+    description: z.string().optional(),
+    propertyType: z.enum(propertyTypeEnum).optional(),
+    listingPrice: z.number().positive().optional(),
+    priceMin: z.number().optional(),
+    priceMax: z.number().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
+    locality: z.string().optional(),
+    subLocality: z.string().optional(),
+    flatNo: z.string().optional(),
+    area: z.string().optional(),
+    address: z.string().optional(),
+    longitude: z.number().optional(),
+    latitude: z.number().optional(),
+    carpetArea: z.number().positive().optional(),
+    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    plotLandArea: z.number().positive().optional(),
+    plotLandAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+    size: z.number().optional(),
+    sizeUnit: z.enum(sizeUnitEnum).optional(),
+    category: z.enum(categoryEnum).optional(),
+    furnishingStatus: z.enum(furnishingStatusEnum).optional(),
+    availabilityStatus: z.enum(availabilityStatusEnum).optional(),
+    ageOfProperty: z.enum(ageOfPropertyEnum).optional(),
+    numberOfRooms: z.number().int().min(0).optional(),
+    numberOfBathrooms: z.number().int().min(0).optional(),
+    numberOfBalcony: z.number().int().min(0).optional(),
+    numberOfFloors: z.number().int().min(0).optional(),
+    propertyFloor: z.string().optional(),
+    allInclusivePrice: z.boolean().optional(),
+    negotiablePrice: z.boolean().optional(),
+    govtChargesTaxIncluded: z.boolean().optional(),
+    propertyFacing: z.enum(propertyFacingEnum).optional(),
+    amenities: z.array(z.string()).optional(),
+    locationAdvantages: z.array(z.string()).optional(),
+    coveredParking: z.number().int().min(0).optional(),
+    uncoveredParking: z.number().int().min(0).optional(),
+    // Media - if provided, use it (can be [] to remove all); if omitted, copy from source
+    media: z.array(propertyMediaSchema).optional(),
+});
+
 export const updatePropertySchema = z.object({
     // Basic Info
     title: z.string().min(1).optional(),

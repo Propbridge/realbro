@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
+import z from "zod";
+import { createExclusivePropertySchema } from "../../validators/property.validators";
 export async function addBookMark(req: Request, res: Response) {
     try {
         const staffId = req.user?.id;
@@ -153,3 +155,134 @@ export async function acquisitionRequestApproval(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export async function createExclusiveProperty(req: Request, res: Response) {
+    try {
+        const staffId = req.user?.id;
+        const role = req.user?.role;
+        if (!staffId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!["SUPER_ADMIN"].includes(role)) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const { propertyId } = req.params as { propertyId: string };
+        if (!propertyId) {
+            return res.status(400).json({ message: "propertyId is required" });
+        }
+
+        type CreateExclusiveInput = z.infer<typeof createExclusivePropertySchema>;
+        const body = req.body as CreateExclusiveInput;
+
+        const property = await prisma.property.findUnique({
+            where: { id: propertyId },
+            include: { media: true, exclusiveProperty: true },
+        });
+        if (!property) {
+            return res.status(404).json({ message: "Property not found" });
+        }
+        if (property.exclusiveProperty) {
+            return res.status(400).json({ message: "Property is already converted to exclusive" });
+        }
+
+        const {
+            media: bodyMedia,
+            fixedRewardGems,
+            ...bodyOverrides
+        } = body;
+
+        const baseData = {
+            title: property.title,
+            description: property.description,
+            propertyType: property.propertyType,
+            listingPrice: property.listingPrice,
+            priceMin: property.priceMin,
+            priceMax: property.priceMax,
+            state: property.state,
+            city: property.city,
+            locality: property.locality,
+            subLocality: property.subLocality,
+            flatNo: property.flatNo,
+            area: property.area,
+            address: property.address,
+            latitude: property.latitude,
+            longitude: property.longitude,
+            carpetArea: property.carpetArea,
+            carpetAreaUnit: property.carpetAreaUnit,
+            plotLandArea: property.plotLandArea,
+            plotLandAreaUnit: property.plotLandAreaUnit,
+            size: property.size,
+            sizeUnit: property.sizeUnit,
+            category: property.category,
+            furnishingStatus: property.furnishingStatus,
+            availabilityStatus: property.availabilityStatus,
+            ageOfProperty: property.ageOfProperty,
+            numberOfRooms: property.numberOfRooms,
+            numberOfBathrooms: property.numberOfBathrooms,
+            numberOfBalcony: property.numberOfBalcony,
+            numberOfFloors: property.numberOfFloors,
+            propertyFloor: property.propertyFloor,
+            allInclusivePrice: property.allInclusivePrice,
+            negotiablePrice: property.negotiablePrice,
+            govtChargesTaxIncluded: property.govtChargesTaxIncluded,
+            propertyFacing: property.propertyFacing,
+            amenities: property.amenities,
+            locationAdvantages: property.locationAdvantages,
+            coveredParking: property.coveredParking,
+            uncoveredParking: property.uncoveredParking,
+        };
+
+        const exclusiveData = {
+            ...baseData,
+            ...bodyOverrides,
+            sourcePropertyId: propertyId,
+            originalUserId: property.userId,
+            fixedRewardGems,
+            status: (bodyOverrides.status ?? "ACTIVE") as "ACTIVE" | "SOLD_OUT" | "ARCHIVED",
+        };
+
+        const mediaToCreate =
+            bodyMedia !== undefined
+                ? bodyMedia
+                : property.media.map((m, index) => ({
+                      url: m.url,
+                      key: m.key,
+                      mediaType: m.mediaType,
+                      order: m.order ?? index,
+                  }));
+
+        const exclusiveProperty = await prisma.exclusiveProperty.create({
+            data: {
+                ...exclusiveData,
+                media:
+                    mediaToCreate.length > 0
+                        ? {
+                              createMany: {
+                                  data: mediaToCreate.map((m, index) => ({
+                                      url: m.url,
+                                      key: m.key,
+                                      mediaType: m.mediaType,
+                                      order: m.order ?? index,
+                                  })),
+                              },
+                          }
+                        : undefined,
+            },
+            include: {
+                sourceProperty: { select: { id: true, title: true, status: true } },
+                originalUser: { select: { id: true, firstName: true, lastName: true, email: true } },
+                media: true,
+            },
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Property converted to exclusive successfully",
+            data: exclusiveProperty,
+        });
+    } catch (error) {
+        console.error("Create exclusive property error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
