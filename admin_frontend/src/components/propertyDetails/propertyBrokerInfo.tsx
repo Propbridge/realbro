@@ -3,7 +3,6 @@
 import Image from "next/image"
 import { CalendarDays, BadgeCheck } from "lucide-react"
 import Link from "next/link"
-import { User } from "@/types/user"
 export interface BrokerInfoData {
     id: string
     name: string

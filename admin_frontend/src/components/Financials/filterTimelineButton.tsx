@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "lucide-react"
 import {
@@ -38,21 +38,25 @@ export function FilterTimelineButton({
         activeFilter?.date ||
         (activeFilter?.startDate && activeFilter?.endDate)
 
-    useEffect(() => {
-        if (open && activeFilter) {
-            if (activeFilter.date) {
-                setMode("single")
-                setSingleDate(activeFilter.date)
-                setStartDate("")
-                setEndDate("")
-            } else if (activeFilter.startDate && activeFilter.endDate) {
-                setMode("range")
-                setStartDate(activeFilter.startDate)
-                setEndDate(activeFilter.endDate)
-                setSingleDate("")
-            }
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen)
+        if (!nextOpen || !activeFilter) return
+
+        if (activeFilter.date) {
+            setMode("single")
+            setSingleDate(activeFilter.date)
+            setStartDate("")
+            setEndDate("")
+            return
         }
-    }, [open, activeFilter])
+
+        if (activeFilter.startDate && activeFilter.endDate) {
+            setMode("range")
+            setStartDate(activeFilter.startDate)
+            setEndDate(activeFilter.endDate)
+            setSingleDate("")
+        }
+    }
 
     const handleApply = () => {
         if (mode === "single" && singleDate) {
@@ -72,7 +76,7 @@ export function FilterTimelineButton({
     }
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"

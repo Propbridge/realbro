@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { api } from "@/lib/api"
 import { AxiosError } from "axios"
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 
@@ -51,6 +51,17 @@ interface UpdateStaffInput {
     role: "SUPER_ADMIN" | "ADMIN" | "VIEWER" | "CUSTOMER_SUPPORT"
 }
 
+const defaultInput: UpdateStaffInput = {
+    firstName: "",
+    lastName: "",
+    age: 0,
+    gender: "MALE",
+    phone: "",
+    email: "",
+    password: "",
+    role: "ADMIN",
+}
+
 const formatPhoneWithCountryCode = (phone: string): string | undefined => {
     const trimmed = phone.trim()
     if (!trimmed) return undefined
@@ -79,21 +90,23 @@ const blockStaffApi = async (id: string) => {
     return response.data
 }
 
+const mapStaffToInput = (staff: StaffData): UpdateStaffInput => ({
+    firstName: staff.firstName ?? "",
+    lastName: staff.lastName ?? "",
+    age: staff.age ?? 0,
+    gender: staff.gender ?? "MALE",
+    phone: staff.phone ?? "",
+    email: staff.email ?? "",
+    password: "",
+    role: staff.role ?? "ADMIN",
+})
+
 export function EditStaff({ staffId }: { staffId: string }) {
     const router = useRouter()
     const [apiError, setApiError] = useState<string | null>(null)
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
-    const [input, setInput] = useState<UpdateStaffInput>({
-        firstName: "",
-        lastName: "",
-        age: 0,
-        gender: "MALE",
-        phone: "",
-        email: "",
-        password: "",
-        role: "ADMIN",
-    })
+    const [overrides, setOverrides] = useState<Partial<UpdateStaffInput>>({})
 
     const { data: staff, isLoading, isError, error: fetchError } = useQuery({
         queryKey: ["staff", staffId],
@@ -101,21 +114,10 @@ export function EditStaff({ staffId }: { staffId: string }) {
         enabled: !!staffId,
     })
 
-    // Populate form when staff data arrives
-    useEffect(() => {
-        if (staff) {
-            setInput({
-                firstName: staff.firstName ?? "",
-                lastName: staff.lastName ?? "",
-                age: staff.age ?? 0,
-                gender: staff.gender ?? "MALE",
-                phone: staff.phone ?? "",
-                email: staff.email ?? "",
-                password: "",
-                role: staff.role ?? "ADMIN",
-            })
-        }
-    }, [staff])
+    const input = useMemo<UpdateStaffInput>(() => {
+        const base = staff ? mapStaffToInput(staff) : defaultInput
+        return { ...base, ...overrides }
+    }, [staff, overrides])
 
     const updateMutation = useMutation({
         mutationFn: updateStaffApi,
@@ -224,7 +226,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                             placeholder="eg. John"
                                             className="h-10 border bg-white"
                                             value={input.firstName}
-                                            onChange={(e) => setInput((p) => ({ ...p, firstName: e.target.value }))}
+                                            onChange={(e) => setOverrides((p) => ({ ...p, firstName: e.target.value }))}
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -233,7 +235,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                             placeholder="eg. Doe"
                                             className="h-10 border bg-white"
                                             value={input.lastName}
-                                            onChange={(e) => setInput((p) => ({ ...p, lastName: e.target.value }))}
+                                            onChange={(e) => setOverrides((p) => ({ ...p, lastName: e.target.value }))}
                                         />
                                     </div>
                                 </div>
@@ -248,7 +250,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                             min={0}
                                             value={input.age || ""}
                                             onChange={(e) =>
-                                                setInput((p) => ({ ...p, age: parseInt(e.target.value, 10) || 0 }))
+                                                setOverrides((p) => ({ ...p, age: parseInt(e.target.value, 10) || 0 }))
                                             }
                                         />
                                     </div>
@@ -257,7 +259,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                         <Select
                                             value={input.gender}
                                             onValueChange={(v) =>
-                                                setInput((p) => ({ ...p, gender: v as "MALE" | "FEMALE" | "OTHER" }))
+                                                setOverrides((p) => ({ ...p, gender: v as "MALE" | "FEMALE" | "OTHER" }))
                                             }
                                         >
                                             <SelectTrigger className="h-10 border shadow-none bg-white">
@@ -286,7 +288,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                         placeholder="eg. 9876543210"
                                         className="h-10 border bg-white"
                                         value={input.phone}
-                                        onChange={(e) => setInput((p) => ({ ...p, phone: e.target.value }))}
+                                        onChange={(e) => setOverrides((p) => ({ ...p, phone: e.target.value }))}
                                     />
                                 </div>
 
@@ -297,7 +299,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                         placeholder="eg. testemail123@gmail.com"
                                         className="h-10 border bg-white"
                                         value={input.email}
-                                        onChange={(e) => setInput((p) => ({ ...p, email: e.target.value }))}
+                                        onChange={(e) => setOverrides((p) => ({ ...p, email: e.target.value }))}
                                     />
                                 </div>
                             </div>
@@ -316,7 +318,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                         className="h-10 border bg-white"
                                         placeholder="Enter new password"
                                         value={input.password}
-                                        onChange={(e) => setInput((p) => ({ ...p, password: e.target.value }))}
+                                        onChange={(e) => setOverrides((p) => ({ ...p, password: e.target.value }))}
                                         minLength={6}
                                     />
                                 </div>
@@ -327,7 +329,7 @@ export function EditStaff({ staffId }: { staffId: string }) {
                                     <RadioGroup
                                         value={input.role}
                                         onValueChange={(v) =>
-                                            setInput((p) => ({ ...p, role: v as typeof input.role }))
+                                            setOverrides((p) => ({ ...p, role: v as typeof input.role }))
                                         }
                                         className="gap-4"
                                     >
