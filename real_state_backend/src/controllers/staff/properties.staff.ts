@@ -791,7 +791,7 @@ export async function getProperty(req: Request, res: Response) {
             where: { id: propertyId },
             include: {
                 media: true,
-                user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true } },
                 exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
             },
         });
@@ -805,7 +805,7 @@ export async function getProperty(req: Request, res: Response) {
                     where: { id: exclusive.sourcePropertyId },
                     include: {
                         media: true,
-                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true } },
                         exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
                     },
                 });

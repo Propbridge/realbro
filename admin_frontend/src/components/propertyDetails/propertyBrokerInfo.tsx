@@ -2,8 +2,10 @@
 
 import Image from "next/image"
 import { CalendarDays, BadgeCheck } from "lucide-react"
-
+import Link from "next/link"
+import { User } from "@/types/user"
 export interface BrokerInfoData {
+    id: string
     name: string
     logoUrl: string
     isVerified: boolean
@@ -16,7 +18,7 @@ interface PropertyBrokerInfoProps {
 
 export function PropertyBrokerInfo({ broker }: PropertyBrokerInfoProps) {
     return (
-        <div className="flex items-center gap-3 mt-4">
+        <Link href={`/user/${broker.id}`} className="flex items-center gap-3 mt-4">
             <Image
                 src={broker.logoUrl}
                 alt={broker.name}
@@ -37,6 +39,6 @@ export function PropertyBrokerInfo({ broker }: PropertyBrokerInfoProps) {
                 <CalendarDays className="size-3.5" />
                 <span className="font-medium">{broker.postedDate}</span>
             </div>
-        </div>
+        </Link>
     )
 }

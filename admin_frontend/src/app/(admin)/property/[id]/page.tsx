@@ -75,6 +75,8 @@ type PropertyResponse = {
             id: string
             firstName: string
             lastName: string
+            avatar: string | null
+            avatarKey: string | null
             email: string
             phone: string
         }
@@ -120,9 +122,8 @@ export default function PropertyPage() {
             setError("Invalid property id")
             return
         }
-        let isMounted = true
-        loadProperty().finally(() => { isMounted = false })
-        return () => { isMounted = false }
+        loadProperty()
+        return () => {}
     }, [propertyId, loadProperty])
 
     const handleToggleBookmark = async () => {
@@ -192,6 +193,7 @@ export default function PropertyPage() {
     const broker = useMemo<BrokerInfoData>(() => {
         if (!property) {
             return {
+                id: "",
                 name: "RealBro",
                 logoUrl: FALLBACK_IMAGE,
                 isVerified: true,
@@ -199,9 +201,13 @@ export default function PropertyPage() {
             }
         }
         const name = `${property.user.firstName} ${property.user.lastName}`.trim()
+        const brokerName = property.status === "SOLDTOREALBRO"
+            ? `RealBro Exclusive - ${name || "RealBro"}`
+            : name || "RealBro"
         return {
-            name: name || "RealBro",
-            logoUrl: FALLBACK_IMAGE,
+            id: property.user.id,
+            name: brokerName,
+            logoUrl: property.user.avatar ?? FALLBACK_IMAGE,
             isVerified: true,
             postedDate: new Date(property.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
