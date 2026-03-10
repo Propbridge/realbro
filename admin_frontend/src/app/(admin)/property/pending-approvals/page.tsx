@@ -10,6 +10,7 @@ import { ExportButton } from "@/components/role_management/exportButton"
 import { ArrowUpDown, ChevronDown } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
+import type { ExportColumn } from "@/components/role_management/exportButton"
 import { api } from "@/lib/api"
 
 type Tab = "pending-approvals" | "pending-exclusive"
@@ -75,6 +76,21 @@ export default function PendingApprovalsPage() {
         )
     }, [properties, globalFilter])
 
+    const exportColumns: ExportColumn[] = [
+        { key: "id", header: "ID" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "location", header: "Location" },
+        { key: "price", header: "Price" },
+        { key: "area", header: "Area" },
+        { key: "bedrooms", header: "Bedrooms" },
+        { key: "bathrooms", header: "Bathrooms" },
+        { key: "balconies", header: "Balconies" },
+        { key: "floors", header: "Floors" },
+        { key: "furnishing", header: "Furnishing" },
+        { key: "postedDate", header: "Posted Date" },
+    ]
+
     const handleEdit = (propertyId: string) => {
         router.push(`/property/${propertyId}`)
     }
@@ -90,7 +106,11 @@ export default function PendingApprovalsPage() {
                         onChange={(e) => setGlobalFilter(e.target.value)}
                         className="h-10 pl-9 border-2 bg-white"
                     />
-                    <ExportButton />
+                    <ExportButton
+                        data={filteredProperties as unknown as Record<string, unknown>[]}
+                        columns={exportColumns}
+                        filename={activeTab === "pending-exclusive" ? "pending-exclusive-properties" : "pending-approvals"}
+                    />
                     <Filter />
                     <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
                         <ArrowUpDown className="size-4 text-blue-500" />

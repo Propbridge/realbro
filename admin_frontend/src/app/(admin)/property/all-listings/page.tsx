@@ -9,6 +9,7 @@ import { PropertyGrid } from "@/components/properties/propertyGrid"
 import { Button } from "@/components/ui/button"
 import { ArrowUpDown, ChevronDown } from "lucide-react"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
+import type { ExportColumn } from "@/components/role_management/exportButton"
 // import type { PendingApprovalData } from "@/components/properties/pendingApprovalCard"
 import { api } from "@/lib/api"
 import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
@@ -83,6 +84,21 @@ export default function AllPropertiesPage() {
         })
     }, [globalFilter, properties, bookmarkedIds, showOnlyBookmarked])
 
+    const exportColumns: ExportColumn[] = [
+        { key: "id", header: "ID" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "location", header: "Location" },
+        { key: "price", header: "Price" },
+        { key: "area", header: "Area" },
+        { key: "bedrooms", header: "Bedrooms" },
+        { key: "bathrooms", header: "Bathrooms" },
+        { key: "balconies", header: "Balconies" },
+        { key: "floors", header: "Floors" },
+        { key: "furnishing", header: "Furnishing" },
+        { key: "postedDate", header: "Posted Date" },
+    ]
+
     const handleToggleBookmark = async (propertyId: string) => {
         const currentlyBookmarked = bookmarkedIds.has(propertyId)
         setBookmarkedIds((prev) => {
@@ -135,7 +151,11 @@ export default function AllPropertiesPage() {
                         onChange={(e) => setGlobalFilter(e.target.value)}
                         className="h-10 pl-9 border-2 bg-white"
                     />
-                    <ExportButton />
+                    <ExportButton
+                        data={filteredProperties as unknown as Record<string, unknown>[]}
+                        columns={exportColumns}
+                        filename="all-listings"
+                    />
                     <Filter
                         showOnlyBookmarked={showOnlyBookmarked}
                         onToggleBookmarked={(checked) => setShowOnlyBookmarked(checked)}
