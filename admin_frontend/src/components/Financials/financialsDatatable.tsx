@@ -30,7 +30,7 @@ import { Search } from "lucide-react";
 
 import { DataTablePagination } from "../ui/data-table-pagination"
 import { ExportButton, type ExportColumn } from "../role_management/exportButton"
-import { Filter } from "./filter";
+import { Filter, type StatusFilter } from "./filter";
 import { FilterTimelineButton, type DateFilterParams } from "./filterTimelineButton";
 
 interface FinancialsDataTableProps<TData, TValue> extends DataTableProps<TData, TValue> {
@@ -45,10 +45,19 @@ export function FinancialsDataTable<TData, TValue>({
     activeDateFilter,
 }: FinancialsDataTableProps<TData, TValue>) {
     const [globalFilter, setGlobalFilter] = React.useState("");
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([]);
+    const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(null);
+
+    const filteredData = React.useMemo(() => {
+        if (!statusFilter) return data;
+        return data.filter((row) => {
+            const r = row as { status?: string };
+            return r.status === statusFilter;
+        });
+    }, [data, statusFilter]);
 
     const table = useReactTable({
-        data,
+        data: filteredData,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -113,7 +122,10 @@ export function FinancialsDataTable<TData, TValue>({
                         onDateFilterChange={onDateFilterChange ?? undefined}
                         activeFilter={activeDateFilter ?? undefined}
                     />
-                    <Filter/>
+                    <Filter
+                        statusFilter={statusFilter}
+                        onStatusFilterChange={setStatusFilter}
+                    />
 
                 </div>
             </div>
