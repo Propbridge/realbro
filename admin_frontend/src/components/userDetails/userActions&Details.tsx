@@ -22,7 +22,7 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
     return (
         <div className="flex flex-col gap-4 mt-4">
             <div className="flex gap-4 w-full justify-start">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-16 w-16 border-2 border-zinc-500">
                     <AvatarImage src={user.avatar ?? ""} />
                     <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
@@ -36,26 +36,21 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
                 </div>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
-                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none">
                     <OctagonMinus className="size-5 text-orange-500" />
                     Block User
                 </Button>
-                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none">
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100  shadow-none">
                     <Gem className="size-5 text-green-500" />
                     <p>Send Gems</p>
                 </Button>
-                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-red-50 hover:text-red-600 shadow-none"
+                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none"
                 onClick={() => router.push(`/user/edit/${user.id}`)}
                 >
                     <PenLine className="size-5 text-blue-500" />
                     <p>Edit User</p>
                 </Button>
-                <Button variant="default" className="bg-green-500 hover:bg h-11 w-12 hover:bg-green-600">
-                    <PhoneCallIcon className="size-5" />
-                </Button>
-                <Button variant="default" className="bg-blue-500 hover:bg h-11 w-12">
-                    <Mail className="size-5" />
-                </Button>
+
             </div>
             <div>
                 <h1 className="font-medium py-4 px-2 text-xl">User Details</h1>

@@ -118,15 +118,151 @@ export async function blockUser(req: Request, res: Response) {
     }
 }
 
-// export async function updateUser(req: Request, res: Response) {
-//     try {
-//         const { id } = req.params;
-//         const { firstName, lastName,age, gender, email, phone, sponsorCode, isBlocked, blockedBy, blockedOn } = req.body;
-//         await prisma.user.update({
-//             where: { id: id as string },
-//             data: { firstName, lastName, email, phone, isBlocked, blockedBy, blockedOn },
-//         });
-//     }
+export async function getUserForEdit(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ message: "User id is required" });
+        }
+        const user = await prisma.user.findUnique({
+            where: { id: id as string },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                avatar: true,
+                age: true,
+                gender: true,
+                referralCode: true,
+                isVerifiedSeller: true,
+                isBlocked: true,
+                kyc: {
+                    select: {
+                        id: true,
+                        type: true,
+                        docNo: true,
+                        status: true,
+                        imageUrl: true,
+                    },
+                },
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.status(200).json({ user });
+    } catch (error) {
+        console.error("Get user for edit error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function updateUserByStaff(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ message: "User id is required" });
+        }
+
+        const existingUser = await prisma.user.findUnique({
+            where: { id: id as string },
+            select: { id: true },
+        });
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const { firstName, lastName, age, gender, email, phone, isVerifiedSeller } = req.body as Partial<{
+            firstName: string;
+            lastName: string;
+            age: number;
+            gender: string;
+            email: string;
+            phone: string;
+            isVerifiedSeller: boolean;
+        }>;
+
+        const data: Record<string, unknown> = {};
+        if (firstName !== undefined) data.firstName = firstName;
+        if (lastName !== undefined) data.lastName = lastName;
+        if (age !== undefined) data.age = age;
+        if (gender !== undefined) data.gender = gender;
+        if (email !== undefined) data.email = email;
+        if (phone !== undefined) data.phone = phone;
+        if (isVerifiedSeller !== undefined) data.isVerifiedSeller = isVerifiedSeller;
+
+        if (Object.keys(data).length === 0) {
+            return res.status(400).json({ message: "No fields provided to update" });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: id as string },
+            data,
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                age: true,
+                gender: true,
+                isVerifiedSeller: true,
+            },
+        });
+
+        return res.status(200).json({ message: "User updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Update user by staff error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function updateKycStatus(req: Request, res: Response) {
+    try {
+        const { id, kycId } = req.params;
+        if (!id || !kycId) {
+            return res.status(400).json({ message: "User id and KYC id are required" });
+        }
+
+        const { status, rejectionReason } = req.body as {
+            status: "PENDING" | "VERIFIED" | "REJECTED";
+            rejectionReason?: string;
+        };
+
+        if (!status || !["PENDING", "VERIFIED", "REJECTED"].includes(status)) {
+            return res.status(400).json({ message: "Invalid status. Must be PENDING, VERIFIED, or REJECTED" });
+        }
+
+        const kyc = await prisma.kyc.findFirst({
+            where: { id: kycId as string, userId: id as string },
+        });
+        if (!kyc) {
+            return res.status(404).json({ message: "KYC record not found" });
+        }
+
+        const updated = await prisma.kyc.update({
+            where: { id: kycId as string },
+            data: {
+                status,
+                rejectionReason: status === "REJECTED" ? (rejectionReason ?? null) : null,
+            },
+            select: {
+                id: true,
+                type: true,
+                docNo: true,
+                status: true,
+                imageUrl: true,
+            },
+        });
+
+        return res.status(200).json({ message: "KYC status updated", kyc: updated });
+    } catch (error) {
+        console.error("Update KYC status error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
 
 export async function fullUserDetails(req:Request, res:Response) {
     try{
