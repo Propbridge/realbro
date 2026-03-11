@@ -1,5 +1,6 @@
 "use client"
 
+import { Fragment } from "react"
 import {
     Sidebar,
     SidebarContent,
@@ -64,7 +65,7 @@ const items = [
     { title: "Requirement Board", url: "requirement-board", icon: ClipboardList },
     { title: "Financials", url: "#", icon: WalletIcon, children: [
         { title: "Transaction History", url: "/financials", icon: WalletCardsIcon },
-        { title: "Gem Approvals", url: "/financials/gem-approvals", icon: Watch },
+        { title: "Gem Approvals", url: "/financials/gem-approvals", icon: Watch, roles: ["SUPER_ADMIN"] as const },
     ] },
     { title: "Banner Management", url: "/banner-management", icon: Image },
     { title: "Support Tickets", url: "/support-tickets", icon: LucideTickets },
@@ -102,9 +103,9 @@ export const AppSidebar = () => {
                                         <CollapsibleContent>
                                             {item.children.map((child) => {
                                                 const ChildIcon = "icon" in child ? child.icon : null
-                                                return (
+                                                const childRoles = "roles" in child ? child.roles : null
+                                                const link = (
                                                     <SidebarMenuItem
-                                                        key={child.title}
                                                         className="pl-8"
                                                     >
                                                         <SidebarMenuButton
@@ -117,6 +118,13 @@ export const AppSidebar = () => {
                                                             </a>
                                                         </SidebarMenuButton>
                                                     </SidebarMenuItem>
+                                                )
+                                                return childRoles ? (
+                                                    <RequireRole key={child.title} roles={[...childRoles]}>
+                                                        {link}
+                                                    </RequireRole>
+                                                ) : (
+                                                    <Fragment key={child.title}>{link}</Fragment>
                                                 )
                                             })}
                                         </CollapsibleContent>
