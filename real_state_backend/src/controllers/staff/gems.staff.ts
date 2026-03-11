@@ -779,6 +779,7 @@ export async function allGemTransactionHistory(req: Request, res: Response) {
                     },
                     user: {
                         select: {
+                            id: true,
                             firstName: true,
                             lastName: true,
                         },
@@ -796,6 +797,7 @@ export async function allGemTransactionHistory(req: Request, res: Response) {
 
         const data = transactions.map((txn) => ({
             id: txn.id,
+            userId: txn.user.id,
             user: `${txn.user.firstName} ${txn.user.lastName}`.trim(),
             reason: txn.reason,
             amount: txn.amount,

@@ -12,6 +12,7 @@ type TransactionsResponse = {
     success: boolean;
     data: Array<{
         id: string;
+        userId: string;
         user: string;
         reason: string;
         amount: number;
@@ -75,6 +76,7 @@ export default function FinancialsPage() {
                     const purposeLabel =
                         reasonLabels[txn.reason] ?? toTitleCase(txn.reason);
                     return {
+                        userId: txn.userId,
                         userName: txn.user,
                         purpose: purposeLabel,
                         staffHandler: txn.staffHandler,

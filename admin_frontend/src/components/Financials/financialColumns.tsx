@@ -5,8 +5,10 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Check, Clock, Eye, Gem, X } from "lucide-react"
 import { ArrowUpDown } from "lucide-react"
+import Link from "next/link"
 
 export type financeTableInterface = {
+    userId: string;
     userName: string;
     purpose: string;
     staffHandler: string;
@@ -33,7 +35,7 @@ export const columns: ColumnDef<financeTableInterface>[] = [
         },
         cell: ({ row }) => {
             const user = row.original
-            return <div className="font-medium pl-4">{user.userName}</div>
+            return <Link target="_blank" href={`/user/${user.userId}`} className="font-medium pl-4 bg-zinc-200 rounded-full hover:bg-zinc-300 hover:text-black text-black p-2 text-center px-4">{user.userName}</Link>
         },
     },
     {
