@@ -213,25 +213,21 @@ export async function reviewBanRequest(req: Request, res: Response) {
         if (request.status !== "PENDING_SUPERADMIN") {
             return res.status(400).json({ message: "Request is not pending super admin approval" });
         }
-        const decision = req.body as { decision: "APPROVED" | "REJECTED" };
-        if (!decision) {
-            return res.status(400).json({ message: "Decision is required" });
+        if (!decision || (decision !== "APPROVED" && decision !== "REJECTED")) {
+            return res.status(400).json({ message: "Decision is required and must be APPROVED or REJECTED" });
         }
         if (decision === "APPROVED") {
             await prisma.banRequest.update({
                 where: { id: requestId as string },
                 data: { status: decision },
-                return res.status(200).json({ message: "Ban request reviewed successfully" });
             });
+            return res.status(200).json({ message: "Ban request reviewed successfully" });
         } else if (decision === "REJECTED") {
             await prisma.banRequest.update({
                 where: { id: requestId as string },
                 data: { status: decision },
             });
-
             return res.status(200).json({ message: "Ban request reviewed successfully" });
-        } else {
-            return res.status(400).json({ message: "Invalid decision" });
         }
         return res.status(200).json({ message: "Ban request reviewed successfully" });
     } catch (error) {
