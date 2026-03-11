@@ -64,7 +64,7 @@ const items = [
     { title: "Requirement Board", url: "requirement-board", icon: ClipboardList },
     { title: "Financials", url: "#", icon: WalletIcon, children: [
         { title: "Transaction History", url: "/financials", icon: WalletCardsIcon },
-        { title: "Pending Transactions", url: "/gems", icon: Watch },
+        { title: "Gem Approvals", url: "/financials/gem-approvals", icon: Watch },
     ] },
     { title: "Banner Management", url: "/banner-management", icon: Image },
     { title: "Support Tickets", url: "/support-tickets", icon: LucideTickets },

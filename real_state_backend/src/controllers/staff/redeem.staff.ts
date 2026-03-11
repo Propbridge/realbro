@@ -4,7 +4,7 @@ import { prisma } from "../../config/prisma";
 import { verifyOtp } from "../../services/otp.service";
 import { debitAndCreateTransaction } from "../../services/gems.service";
 
-async function resolveStaffActorId(staffId: string, role: string): Promise<string> {
+export async function resolveStaffActorId(staffId: string, role: string): Promise<string> {
     if (role !== "SUPER_ADMIN") return staffId;
 
     const superAdmin = await prisma.superAdmin.findUnique({

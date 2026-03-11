@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { verifyOtp, createOtp, sendOtpEmail } from "../../services/otp.service";
 import { creditAndCreateTransactions } from "../../services/gems.service";
+import { resolveStaffActorId } from "./redeem.staff";
 
 
 
@@ -498,7 +499,7 @@ export async function gemRequests(req: Request, res: Response) {
 
         // Super admin can see all gem requests. Other staff can see only their own.
         if (role !== "SUPER_ADMIN") {
-            return 
+            where.requestedByStaffId = staffId;
         }
 
         const [requests, total] = await Promise.all([
@@ -593,11 +594,16 @@ export async function approveGemRequest(req: Request, res: Response) {
             return res.status(404).json({ message: "Request not found" });
         }
 
+        if (request.type === "REDEMPTION") {
+            return res.status(400).json({ message: "Use approve-redeem-request for redemption requests" });
+        }
+
         if (request.status !== "PENDING_SUPERADMIN") {
             return res.status(400).json({ message: "Request is not pending super admin approval" });
         }
 
         if (decision === "APPROVED") {
+            const actorStaffId = await resolveStaffActorId(staffId, role);
             await prisma.$transaction(async (tx) => {
                 await tx.gemRequest.update({
                     where: { id: requestId },
@@ -610,7 +616,7 @@ export async function approveGemRequest(req: Request, res: Response) {
                     referralUserId: request.referralUserId,
                     baseGems: request.baseGems,
                     referralGems: request.referralGems,
-                    requestedByStaffId: staffId,
+                    requestedByStaffId: actorStaffId,
                     reason: request.type === "EXCLUSIVE_SALE_REWARD"
                         ? GemTxnReason.EXCLUSIVE_SALE_REWARD
                         : GemTxnReason.ACQUISITION_REWARD,
@@ -901,6 +907,54 @@ export async function getGemStats(req: Request, res: Response) {
         });
     } catch (error) {
         console.error("Get gem stats error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function getPendingTransactions(req: Request, res: Response) {
+    try {
+        const staffId = req.user?.id;
+        const role = req.user?.role;
+        if (!staffId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!["ADMIN"].includes(role)) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const pendingTransactions = await prisma.gemRequest.findMany({
+            where: { status: "PENDING_SUPERADMIN" },
+            select: {
+                id: true,
+                createdAt: true,
+                type: true,
+                requestedByStaff: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                referralUser: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+            },
+        });
+        return res.status(200).json({ success: true, data: pendingTransactions });
+    }
+    catch (error) {
+        console.error("Get pending transactions error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
