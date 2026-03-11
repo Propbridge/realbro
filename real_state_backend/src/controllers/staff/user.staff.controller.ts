@@ -205,7 +205,7 @@ export async function reviewBanRequest(req: Request, res: Response) {
         }
         const request = await prisma.banRequest.findUnique({
             where: { id: requestId as string },
-            select: { id: true, status: true },
+            select: { id: true, status: true, userId: true },
         });
         if (!request) {
             return res.status(404).json({ message: "Request not found" });
@@ -217,11 +217,18 @@ export async function reviewBanRequest(req: Request, res: Response) {
             return res.status(400).json({ message: "Decision is required and must be APPROVED or REJECTED" });
         }
         if (decision === "APPROVED") {
-            await prisma.banRequest.update({
-                where: { id: requestId as string },
-                data: { status: decision },
-            });
-            return res.status(200).json({ message: "Ban request reviewed successfully" });
+            const staffId = req.user?.id ?? null;
+            await prisma.$transaction([
+                prisma.banRequest.update({
+                    where: { id: requestId as string },
+                    data: { status: decision },
+                }),
+                prisma.user.update({
+                    where: { id: request.userId },
+                    data: { isBlocked: true, blockedBy: staffId, blockedOn: new Date() },
+                }),
+            ]);
+            return res.status(200).json({ message: "Ban request approved and user blocked successfully" });
         } else if (decision === "REJECTED") {
             await prisma.banRequest.update({
                 where: { id: requestId as string },
@@ -234,8 +241,6 @@ export async function reviewBanRequest(req: Request, res: Response) {
         console.error("Review ban request error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
-
-
 }
 
 export async function getUserForEdit(req: Request, res: Response) {
@@ -532,6 +537,7 @@ export async function getAllBanRequests(req: Request, res: Response) {
                 }
             },
         });
+        return res.status(200).json({ success: true, data: banRequests });
     } catch (error) {
         console.error("Get all ban requests error:", error);
         return res.status(500).json({ message: "Internal server error" });
