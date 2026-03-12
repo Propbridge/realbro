@@ -1,14 +1,25 @@
 "use client";
 
-import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, Phone, Gift, OctagonMinus } from "lucide-react";
+import { useState } from "react";
+import { Building2, Gem, Handshake, IndianRupee, Mail, PenLine, Phone, Gift, OctagonMinus, Unlock, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "../ui/dialog";
 import { BlueTick } from "./blueTick";
 import { VerifiedSeller } from "./verifiedSeller";
 import { UserSellingHistory } from "./userSellingHistory";
 import { SendGemsDialog } from "../shared/sendGemsDialog";
 import type { FullUserData } from "./types";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { AxiosError } from "axios";
 
 function formatPrice(value: number): string {
     if (value >= 10000000) return `₹ ${(value / 10000000).toFixed(1)} Cr`;
@@ -17,11 +28,54 @@ function formatPrice(value: number): string {
     return `₹ ${value}`;
 }
 
-export function UserActionsAndDetails({ user }: { user: FullUserData }) {
+export function UserActionsAndDetails({ user, onUserUpdated }: { user: FullUserData; onUserUpdated?: () => void }) {
     const router = useRouter();
     const { userStats, properties_by_status } = user;
     const name = `${user.firstName} ${user.lastName}`;
     const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
+
+    const [blockOpen, setBlockOpen] = useState(false);
+    const [unblockOpen, setUnblockOpen] = useState(false);
+    const [isBlocking, setIsBlocking] = useState(false);
+    const [isUnblocking, setIsUnblocking] = useState(false);
+    const [blockError, setBlockError] = useState<string | null>(null);
+    const [unblockError, setUnblockError] = useState<string | null>(null);
+
+    const handleBlock = async () => {
+        try {
+            setIsBlocking(true);
+            setBlockError(null);
+            await api.put(`/staff/users/${user.id}/block`);
+            setBlockOpen(false);
+            onUserUpdated?.();
+        } catch (err) {
+            console.error("Block user error:", err);
+            const msg = err instanceof AxiosError && (err.response?.data as { message?: string })?.message
+                ? String((err.response?.data as { message?: string }).message)
+                : "Failed to block user";
+            setBlockError(msg);
+        } finally {
+            setIsBlocking(false);
+        }
+    };
+
+    const handleUnblock = async () => {
+        try {
+            setIsUnblocking(true);
+            setUnblockError(null);
+            await api.put(`/staff/users/${user.id}/unblock`);
+            setUnblockOpen(false);
+            onUserUpdated?.();
+        } catch (err) {
+            console.error("Unblock user error:", err);
+            const msg = err instanceof AxiosError && (err.response?.data as { message?: string })?.message
+                ? String((err.response?.data as { message?: string }).message)
+                : "Failed to unblock user";
+            setUnblockError(msg);
+        } finally {
+            setIsUnblocking(false);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-4 mt-4">
@@ -39,10 +93,25 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
                 </div>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
-                <Button variant="outline" className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100   shadow-none">
-                    <OctagonMinus className="size-5 text-orange-500" />
-                    Block User
-                </Button>
+                {user.isBlocked ? (
+                    <Button
+                        variant="outline"
+                        className="gap-2 h-12 w-32 border-green-200 hover:bg-green-50 shadow-none"
+                        onClick={() => setUnblockOpen(true)}
+                    >
+                        <Unlock className="size-5 text-green-600" />
+                        Unblock User
+                    </Button>
+                ) : (
+                    <Button
+                        variant="outline"
+                        className="gap-2 h-12 w-32 border-red-200 hover:bg-zinc-100 shadow-none"
+                        onClick={() => setBlockOpen(true)}
+                    >
+                        <OctagonMinus className="size-5 text-orange-500" />
+                        Block User
+                    </Button>
+                )}
                 <SendGemsDialog
                     prefillEmail={user.email}
                     trigger={
@@ -123,6 +192,52 @@ export function UserActionsAndDetails({ user }: { user: FullUserData }) {
                     soldFromExclusive={properties_by_status.soldFromExclusive}
                 />
             </div>
+
+            <Dialog open={blockOpen} onOpenChange={setBlockOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Block User</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to block {name}? They will no longer be able to access the platform.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {blockError && <p className="text-sm text-red-500">{blockError}</p>}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setBlockOpen(false)} disabled={isBlocking}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleBlock} disabled={isBlocking}>
+                            {isBlocking ? <Loader2 className="size-4 animate-spin" /> : null}
+                            {isBlocking ? "Blocking..." : "Block"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={unblockOpen} onOpenChange={setUnblockOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unblock User</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to unblock {name}? They will be able to access the platform again.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {unblockError && <p className="text-sm text-red-500">{unblockError}</p>}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setUnblockOpen(false)} disabled={isUnblocking}>
+                            Cancel
+                        </Button>
+                        <Button
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={handleUnblock}
+                            disabled={isUnblocking}
+                        >
+                            {isUnblocking ? <Loader2 className="size-4 animate-spin" /> : null}
+                            {isUnblocking ? "Unblocking..." : "Unblock"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
