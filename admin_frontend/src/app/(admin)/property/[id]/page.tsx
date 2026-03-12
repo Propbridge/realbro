@@ -185,9 +185,11 @@ export default function PropertyPage() {
         return "AVAILABLE"
     }, [property])
 
-    const images = useMemo(() => {
-        if (!property?.media?.length) return [FALLBACK_IMAGE]
-        return property.media.map((item) => item.url)
+    const mediaItems = useMemo(() => {
+        if (!property?.media?.length) return [{ url: FALLBACK_IMAGE, mediaType: "IMAGE" }]
+        return [...property.media]
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+            .map((item) => ({ url: item.url, mediaType: item.mediaType }))
     }, [property])
 
     const broker = useMemo<BrokerInfoData>(() => {
@@ -272,7 +274,7 @@ export default function PropertyPage() {
                 <div className="flex gap-6 mt-4 px-4">
                 <div className="w-1/2">
                     <PropertyImageCarousel
-                        images={images}
+                        media={mediaItems}
                         status={displayStatus}
                         isExclusive={Boolean(property.exclusiveProperty)}
                         gems={property.exclusiveProperty?.fixedRewardGems}

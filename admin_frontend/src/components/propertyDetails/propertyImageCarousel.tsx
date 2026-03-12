@@ -2,13 +2,18 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, Crown, Gem, ImageIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Crown, Gem, ImageIcon, Video } from "lucide-react"
 
 /** User-facing display status for property image overlay */
 export type PropertyDisplayStatus = "AVAILABLE" | "SOLD" | "UNLISTED"
 
+export type MediaItem = { url: string; mediaType: string }
+
 interface PropertyImageCarouselProps {
-    images: string[]
+    /** @deprecated Use media instead. Fallback when media is empty. */
+    images?: string[]
+    /** Media items (images + videos) ordered by display order */
+    media?: MediaItem[]
     /** Property display status for overlay badge */
     status?: PropertyDisplayStatus
     /** When set, show exclusive badge and gems */
@@ -23,26 +28,51 @@ const statusStyles: Record<PropertyDisplayStatus, string> = {
     UNLISTED: "bg-gray-600",
 }
 
-export function PropertyImageCarousel({ images, status = "AVAILABLE", isExclusive, gems }: PropertyImageCarouselProps) {
+function resolveMediaItems(media?: MediaItem[], images?: string[]): MediaItem[] {
+    if (media?.length) {
+        return media
+    }
+    if (images?.length) {
+        return images.map((url) => ({ url, mediaType: "IMAGE" }))
+    }
+    return []
+}
+
+export function PropertyImageCarousel({ images, media, status = "AVAILABLE", isExclusive, gems }: PropertyImageCarouselProps) {
+    const items = resolveMediaItems(media, images)
     const [currentIndex, setCurrentIndex] = useState(0)
+    const currentItem = items[currentIndex]
+    const isVideo = currentItem?.mediaType === "VIDEO"
 
     const goToPrevious = () => {
-        setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+        setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1))
     }
 
     const goToNext = () => {
-        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+        setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1))
     }
+
+    if (items.length === 0) return null
 
     return (
         <div className="relative rounded-xl overflow-hidden bg-gray-100">
-            <Image
-                src={images[currentIndex]}
-                alt={`Property image ${currentIndex + 1}`}
-                width={600}
-                height={400}
-                className="w-full h-[340px] object-cover"
-            />
+            {isVideo ? (
+                <video
+                    key={currentItem.url}
+                    src={currentItem.url}
+                    controls
+                    playsInline
+                    className="w-full h-[340px] object-cover"
+                />
+            ) : (
+                <Image
+                    src={currentItem.url}
+                    alt={`Property image ${currentIndex + 1}`}
+                    width={600}
+                    height={400}
+                    className="w-full h-[340px] object-cover"
+                />
+            )}
 
             <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {status && (
@@ -81,8 +111,8 @@ export function PropertyImageCarousel({ images, status = "AVAILABLE", isExclusiv
 
             <div className="absolute bottom-4 right-4">
                 <span className="bg-black/60 text-white text-xs font-medium px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                    <ImageIcon className="size-3.5" />
-                    {currentIndex + 1}/{images.length}
+                    {isVideo ? <Video className="size-3.5" /> : <ImageIcon className="size-3.5" />}
+                    {currentIndex + 1}/{items.length}
                 </span>
             </div>
         </div>
