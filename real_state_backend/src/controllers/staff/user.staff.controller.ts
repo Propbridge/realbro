@@ -263,6 +263,7 @@ export async function getUserForEdit(req: Request, res: Response) {
                 referralCode: true,
                 isVerifiedSeller: true,
                 isBlocked: true,
+                blueTick: true,
                 kyc: {
                     select: {
                         id: true,
@@ -299,7 +300,7 @@ export async function updateUserByStaff(req: Request, res: Response) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const { firstName, lastName, age, gender, email, phone, isVerifiedSeller } = req.body as Partial<{
+        const { firstName, lastName, age, gender, email, phone, isVerifiedSeller, blueTick } = req.body as Partial<{
             firstName: string;
             lastName: string;
             age: number;
@@ -307,6 +308,7 @@ export async function updateUserByStaff(req: Request, res: Response) {
             email: string;
             phone: string;
             isVerifiedSeller: boolean;
+            blueTick: boolean;
         }>;
 
         const data: Record<string, unknown> = {};
@@ -317,7 +319,7 @@ export async function updateUserByStaff(req: Request, res: Response) {
         if (email !== undefined) data.email = email;
         if (phone !== undefined) data.phone = phone;
         if (isVerifiedSeller !== undefined) data.isVerifiedSeller = isVerifiedSeller;
-
+        if (blueTick !== undefined) data.blueTick = blueTick;
         if (Object.keys(data).length === 0) {
             return res.status(400).json({ message: "No fields provided to update" });
         }
@@ -334,6 +336,7 @@ export async function updateUserByStaff(req: Request, res: Response) {
                 age: true,
                 gender: true,
                 isVerifiedSeller: true,
+                blueTick: true,
             },
         });
 

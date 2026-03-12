@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button"
 import { X, Pencil, OctagonMinus, XIcon, Upload, ImageIcon, Eye, Loader2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { BlueTick } from "../userDetails/blueTick"
+import { VerifiedSeller } from "../userDetails/verifiedSeller"
 
 type KycItem = {
     id: string
@@ -217,6 +219,18 @@ export function EditUser() {
                             <div className="flex justify-between items-center space-x-2">
                                 <Label htmlFor="verified-seller" className="font-medium text-sm">
                                     Verified Seller <span className="text-[12px] text-zinc-500">(Provide Verified Badge)</span>
+                                    <VerifiedSeller/>
+                                </Label>
+                                <Switch
+                                    id="verified-seller"
+                                    checked={isVerifiedSeller}
+                                    onCheckedChange={setIsVerifiedSeller}
+                                />
+                            </div>
+                            <div className="flex justify-between items-center space-x-2">
+                                <Label htmlFor="verified-seller" className="font-medium text-sm">
+                                    Blue Tick <span className="text-[12px] text-zinc-500">(Provide Blue Tick)</span>
+                                    <BlueTick />
                                 </Label>
                                 <Switch
                                     id="verified-seller"
@@ -256,11 +270,10 @@ export function EditUser() {
                                             void handleKycStatusChange(aadharKyc.id, status)
                                         }}
                                     >
-                                        <SelectTrigger className={`h-10 w-42 text-sm font-medium border-2 shadow-none ${
-                                            aadharStatus === "VERIFIED" ? "text-green-600 border-green-200 bg-green-50" :
-                                            aadharStatus === "REJECTED" ? "text-red-600 border-red-200 bg-red-50" :
-                                            "text-yellow-600 border-yellow-200 bg-yellow-50"
-                                        }`}>
+                                        <SelectTrigger className={`h-10 w-42 text-sm font-medium border-2 shadow-none ${aadharStatus === "VERIFIED" ? "text-green-600 border-green-200 bg-green-50" :
+                                                aadharStatus === "REJECTED" ? "text-red-600 border-red-200 bg-red-50" :
+                                                    "text-yellow-600 border-yellow-200 bg-yellow-50"
+                                            }`}>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -303,11 +316,10 @@ export function EditUser() {
                                             void handleKycStatusChange(panKyc.id, status)
                                         }}
                                     >
-                                        <SelectTrigger className={`h-10 w-42 text-sm font-medium border-2 shadow-none ${
-                                            panStatus === "VERIFIED" ? "text-green-600 border-green-200 bg-green-50" :
-                                            panStatus === "REJECTED" ? "text-red-600 border-red-200 bg-red-50" :
-                                            "text-yellow-600 border-yellow-200 bg-yellow-50"
-                                        }`}>
+                                        <SelectTrigger className={`h-10 w-42 text-sm font-medium border-2 shadow-none ${panStatus === "VERIFIED" ? "text-green-600 border-green-200 bg-green-50" :
+                                                panStatus === "REJECTED" ? "text-red-600 border-red-200 bg-red-50" :
+                                                    "text-yellow-600 border-yellow-200 bg-yellow-50"
+                                            }`}>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
