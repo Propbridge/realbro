@@ -73,6 +73,8 @@ export async function getAllBlockedUsers(req: Request, res: Response) {
                 blockedOn: true,
                 points: true,
                 isEmailVerified: true,
+                blueTick: true,
+                isVerifiedSeller: true,
                 createdAt: true,
                 updatedAt: true,
             },

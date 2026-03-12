@@ -21,6 +21,9 @@ export type BlockedUserColumnInterface = {
     username: string
     email: string
     blockedOn: string
+    gems?: number
+    isVerifiedSeller?: boolean
+    isBlueTick?: boolean
 }
 
 type BlockedUsersColumnsOptions = {

@@ -10,7 +10,10 @@ type BlockedUserApiItem = {
     firstName: string
     lastName: string
     email: string
-    blockedOn: string
+    blockedOn: string | null
+    points?: number
+    blueTick?: boolean
+    isVerifiedSeller?: boolean
 }
 
 async function getBlockedUsers(): Promise<BlockedUserColumnInterface[]> {
@@ -27,6 +30,9 @@ async function getBlockedUsers(): Promise<BlockedUserColumnInterface[]> {
                 year: "numeric",
               })
             : "—",
+        gems: u.points ?? 0,
+        isVerifiedSeller: u.isVerifiedSeller ?? false,
+        isBlueTick: u.blueTick ?? false,
     }))
 }
 

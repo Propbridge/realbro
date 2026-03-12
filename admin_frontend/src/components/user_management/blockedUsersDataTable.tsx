@@ -20,25 +20,38 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Search, SlidersHorizontal, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
 import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { ExportButton, type ExportColumn } from "@/components/role_management/exportButton"
+import { UsersFilter, applyUsersFilter, type UsersFilterState } from "./usersFilter"
+
+type FilterableUser = { gems?: number; isVerifiedSeller?: boolean; isBlueTick?: boolean }
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
 }
 
-export function BlockedUsersDataTable<TData, TValue>({
+export function BlockedUsersDataTable<TData extends FilterableUser, TValue>({
     columns,
     data,
 }: DataTableProps<TData, TValue>) {
     const [globalFilter, setGlobalFilter] = React.useState("")
     const [sorting, setSorting] = React.useState<SortingState>([])
+    const [filters, setFilters] = React.useState<UsersFilterState>({
+        verifiedSeller: "all",
+        blueTick: "all",
+        gemsMin: "",
+        gemsMax: "",
+    })
+
+    const filteredData = React.useMemo(
+        () => applyUsersFilter(data, filters),
+        [data, filters]
+    )
 
     const table = useReactTable({
-        data,
+        data: filteredData,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -85,11 +98,7 @@ export function BlockedUsersDataTable<TData, TValue>({
                         columns={blockedUsersExportColumns}
                         filename="blocked-users"
                     />
-                    <Button variant="outline" className="gap-2 shadow-none border-2 h-10">
-                        <SlidersHorizontal className="size-4" />
-                        Filters
-                        <ChevronDown className="size-4" />
-                    </Button>
+                    <UsersFilter filters={filters} onFiltersChange={setFilters} />
                     {/* <Button variant="outline" className="gap-2 shadow-none border-2 h-10">
                         <ArrowUpDown className="size-4" />
                         Sort by
