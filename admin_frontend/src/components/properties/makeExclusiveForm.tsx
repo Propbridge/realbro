@@ -14,6 +14,9 @@ import { CheckCircle, Loader2, X } from "lucide-react";
 type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "ARCHIVED";
 
 type ExistingProperty = {
+    fixedRewardGems?: number | null;
+    notes?: string | null;
+    status?: string | null;
     title?: string | null;
     description?: string | null;
     listingPrice?: number | null;
