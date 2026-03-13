@@ -549,9 +549,111 @@ export const searchPropertiesSchema = z.object({
     ),
 });
 
+// Filter Exclusive Properties Schema
+export const filterExclusivePropertiesSchema = z.object({
+    status: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : ["ACTIVE"],
+        z.array(z.enum(exclusivePropertyStatusEnum)).optional()
+    ),
+
+    category: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(categoryEnum)).optional()
+    ),
+    propertyType: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(propertyTypeEnum)).optional()
+    ),
+    furnishingStatus: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(furnishingStatusEnum)).optional()
+    ),
+    availabilityStatus: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(availabilityStatusEnum)).optional()
+    ),
+    ageOfProperty: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(ageOfPropertyEnum)).optional()
+    ),
+    propertyFacing: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : undefined,
+        z.array(z.enum(propertyFacingEnum)).optional()
+    ),
+
+    priceMin: z.preprocess(
+        (val) => val ? parseFloat(val as string) : undefined,
+        z.number().positive().optional()
+    ),
+    priceMax: z.preprocess(
+        (val) => val ? parseFloat(val as string) : undefined,
+        z.number().positive().optional()
+    ),
+    carpetAreaMin: z.preprocess(
+        (val) => val ? parseFloat(val as string) : undefined,
+        z.number().positive().optional()
+    ),
+    carpetAreaMax: z.preprocess(
+        (val) => val ? parseFloat(val as string) : undefined,
+        z.number().positive().optional()
+    ),
+    carpetAreaUnit: z.enum(carpetAreaUnitEnum).optional(),
+
+    state: z.string().optional(),
+    city: z.string().optional(),
+    locality: z.string().optional(),
+
+    numberOfRooms: z.preprocess(
+        (val) => val ? parseInt(val as string, 10) : undefined,
+        z.number().int().min(0).optional()
+    ),
+    numberOfBathrooms: z.preprocess(
+        (val) => val ? parseInt(val as string, 10) : undefined,
+        z.number().int().min(0).optional()
+    ),
+
+    sortBy: z.enum(["price_asc", "price_desc", "created_desc", "created_asc"]).default("created_desc"),
+    page: z.preprocess(
+        (val) => val ? parseInt(val as string, 10) : 1,
+        z.number().int().min(1).default(1)
+    ),
+    limit: z.preprocess(
+        (val) => val ? Math.min(parseInt(val as string, 10), 100) : 10,
+        z.number().int().min(1).max(100).default(10)
+    ),
+});
+
+// Search Exclusive Properties Schema
+export const searchExclusivePropertiesSchema = z.object({
+    query: z.string().optional(),
+
+    status: z.preprocess(
+        (val) => val ? (Array.isArray(val) ? val : [val]) : ["ACTIVE"],
+        z.array(z.enum(exclusivePropertyStatusEnum)).optional()
+    ),
+
+    state: z.string().optional(),
+    city: z.string().optional(),
+    locality: z.string().optional(),
+    subLocality: z.string().optional(),
+    area: z.string().optional(),
+
+    sortBy: z.enum(["price_asc", "price_desc", "created_desc", "created_asc"]).default("created_desc"),
+    page: z.preprocess(
+        (val) => val ? parseInt(val as string, 10) : 1,
+        z.number().int().min(1).default(1)
+    ),
+    limit: z.preprocess(
+        (val) => val ? Math.min(parseInt(val as string, 10), 100) : 10,
+        z.number().int().min(1).max(100).default(10)
+    ),
+});
+
 export type addPropertyInput = z.infer<typeof addPropertySchema>;
 export type addDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
 export type updatePropertyInput = z.infer<typeof updatePropertySchema>;
 export type addMediaInput = z.infer<typeof addMediaSchema>;
 export type filterPropertiesInput = z.infer<typeof filterPropertiesSchema>;
 export type searchPropertiesInput = z.infer<typeof searchPropertiesSchema>;
+export type filterExclusivePropertiesInput = z.infer<typeof filterExclusivePropertiesSchema>;
+export type searchExclusivePropertiesInput = z.infer<typeof searchExclusivePropertiesSchema>;

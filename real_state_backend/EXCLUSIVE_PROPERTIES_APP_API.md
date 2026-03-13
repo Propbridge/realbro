@@ -166,3 +166,128 @@ curl -X GET "http://localhost:5000/api/v1/user/exclusive-properties/cm9x8abc123"
 2. Detail API returns sorted `media` array by `order` ascending.
 3. For app home/discovery use default status (ACTIVE) only.
 4. If needed, app can fetch sold/archived tabs using `status=SOLD_OUT` and `status=ARCHIVED`.
+
+---
+
+## 3. Search Exclusive Properties
+
+**Endpoint:** `GET /api/v1/user/exclusive-properties/search`
+
+**Auth Required:** No
+
+**Description:**
+Searches only within exclusive properties (not normal properties).
+
+### Query Params
+- `query` (optional, string): Free text search in title and location fields
+- `status` (optional, repeatable): `ACTIVE`, `SOLD_OUT`, `ARCHIVED` (default: `ACTIVE`)
+- `state` (optional, string)
+- `city` (optional, string)
+- `locality` (optional, string)
+- `subLocality` (optional, string)
+- `area` (optional, string)
+- `sortBy` (optional): `price_asc`, `price_desc`, `created_desc`, `created_asc` (default: `created_desc`)
+- `page` (optional, number, default: `1`)
+- `limit` (optional, number, default: `10`, max: `100`)
+
+### Example Request
+```bash
+curl -X GET "http://localhost:5000/api/v1/user/exclusive-properties/search?query=bhopal&status=ACTIVE&sortBy=created_desc&page=1&limit=10"
+```
+
+### Success Response (200)
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cm9x8abc123",
+      "title": "Premium Lake View Apartment",
+      "status": "ACTIVE",
+      "listingPrice": 7800000,
+      "city": "Bhopal",
+      "locality": "Arera Colony",
+      "subLocality": "Green Heights",
+      "numberOfRooms": 3,
+      "numberOfBathrooms": 2,
+      "numberOfBalcony": 2,
+      "numberOfFloors": 12,
+      "furnishingStatus": "FullyFurnished",
+      "fixedRewardGems": 300,
+      "imageUrl": "https://your-cdn.com/exclusive/property-1.jpg",
+      "createdAt": "2026-03-10T08:00:00.000Z",
+      "updatedAt": "2026-03-12T09:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 12,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 2,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+```
+
+---
+
+## 4. Filter Exclusive Properties
+
+**Endpoint:** `GET /api/v1/user/exclusive-properties/filter`
+
+**Auth Required:** No
+
+**Description:**
+Applies structured filters only on exclusive properties.
+
+### Query Params
+- `status` (optional, repeatable): `ACTIVE`, `SOLD_OUT`, `ARCHIVED` (default: `ACTIVE`)
+- `category` (optional, repeatable): `RESIDENTIAL`, `COMMERCIAL`, `AGRICULTURAL`
+- `propertyType` (optional, repeatable): `FARMLAND`, `DUPLEX`, `FLAT`, `PLOT`
+- `furnishingStatus` (optional, repeatable)
+- `availabilityStatus` (optional, repeatable): `ReadyToMove`, `UnderConstruction`
+- `ageOfProperty` (optional, repeatable): `ZeroToOne`, `OneToThree`, `ThreeToSix`, `SixToTen`, `TenPlus`
+- `propertyFacing` (optional, repeatable)
+- `priceMin` (optional, number)
+- `priceMax` (optional, number)
+- `carpetAreaMin` (optional, number)
+- `carpetAreaMax` (optional, number)
+- `carpetAreaUnit` (optional): `SQFT`, `SQM`, `ACRES`
+- `state` (optional, string)
+- `city` (optional, string)
+- `locality` (optional, string)
+- `numberOfRooms` (optional, number, minimum)
+- `numberOfBathrooms` (optional, number, minimum)
+- `sortBy` (optional): `price_asc`, `price_desc`, `created_desc`, `created_asc` (default: `created_desc`)
+- `page` (optional, number, default: `1`)
+- `limit` (optional, number, default: `10`, max: `100`)
+
+### Example Request
+```bash
+curl -X GET "http://localhost:5000/api/v1/user/exclusive-properties/filter?status=ACTIVE&category=RESIDENTIAL&city=Bhopal&priceMin=1000000&priceMax=10000000&numberOfRooms=2&sortBy=price_asc&page=1&limit=10"
+```
+
+### Success Response (200)
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cm9x8abc123",
+      "title": "Premium Lake View Apartment",
+      "status": "ACTIVE",
+      "listingPrice": 7800000,
+      "city": "Bhopal"
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "totalCount": 1,
+    "limit": 10,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
