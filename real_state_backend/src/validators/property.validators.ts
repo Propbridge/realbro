@@ -108,6 +108,49 @@ const lenientPropertyFloor = z.preprocess((value) => {
     return undefined;
 }, z.string().optional().nullable());
 
+const nullablePositiveNumberForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    return value;
+}, z.number().positive().optional().nullable());
+
+const nullableUnitEnumForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    return carpetAreaUnitEnum.includes(value as (typeof carpetAreaUnitEnum)[number]) ? value : undefined;
+}, z.enum(carpetAreaUnitEnum).optional().nullable());
+
+const nullableNonNegativeIntForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return undefined;
+}, z.number().int().min(0).optional().nullable());
+
+const lenientAvailabilityStatusForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    return availabilityStatusEnum.includes(value as (typeof availabilityStatusEnum)[number]) ? value : undefined;
+}, z.enum(availabilityStatusEnum).optional().nullable());
+
+const lenientAgeOfPropertyForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    return ageOfPropertyEnum.includes(value as (typeof ageOfPropertyEnum)[number]) ? value : undefined;
+}, z.enum(ageOfPropertyEnum).optional().nullable());
+
+const lenientPropertyFloorForUpdate = z.preprocess((value) => {
+    if (value === null) return null;
+    if (value === "") return undefined;
+    if (typeof value === "string") return value;
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+    return undefined;
+}, z.string().optional().nullable());
+
 export const propertyMediaSchema = z.object({
     url: z.string().url(),
     key: z.string(),
@@ -343,23 +386,23 @@ export const updatePropertySchema = z.object({
     latitude: z.number().optional(),
     
     // Size
-    carpetArea: nullablePositiveNumber,
-    carpetAreaUnit: nullableUnitEnum,
-    plotLandArea: nullablePositiveNumber,
-    plotLandAreaUnit: nullableUnitEnum,
+    carpetArea: nullablePositiveNumberForUpdate,
+    carpetAreaUnit: nullableUnitEnumForUpdate,
+    plotLandArea: nullablePositiveNumberForUpdate,
+    plotLandAreaUnit: nullableUnitEnumForUpdate,
     
     // Basic Details
     category: z.enum(categoryEnum).optional(),
     furnishingStatus: z.enum(furnishingStatusEnum).optional(),
-    availabilityStatus: lenientAvailabilityStatus,
-    ageOfProperty: lenientAgeOfProperty,
+    availabilityStatus: lenientAvailabilityStatusForUpdate,
+    ageOfProperty: lenientAgeOfPropertyForUpdate,
     
     // Property Details
-    numberOfRooms: nullableNonNegativeInt,
-    numberOfBathrooms: nullableNonNegativeInt,
-    numberOfBalcony: nullableNonNegativeInt,
-    numberOfFloors: nullableNonNegativeInt,
-    propertyFloor: lenientPropertyFloor,
+    numberOfRooms: nullableNonNegativeIntForUpdate,
+    numberOfBathrooms: nullableNonNegativeIntForUpdate,
+    numberOfBalcony: nullableNonNegativeIntForUpdate,
+    numberOfFloors: nullableNonNegativeIntForUpdate,
+    propertyFloor: lenientPropertyFloorForUpdate,
     
     // Price Details
     allInclusivePrice: z.boolean().optional(),
