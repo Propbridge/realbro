@@ -89,14 +89,16 @@ export function PropertyActionBar({
                 >
                     <Mail className="size-4" />
                 </Button> */}
-                <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="border-2 shadow-none"
-                    onClick={() => propertyId && router.push(editHref)}
-                >
-                    <Pencil className="size-4" />
-                </Button>
+                {isExclusive && (
+                    <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="border-2 shadow-none"
+                        onClick={() => propertyId && router.push(editHref)}
+                    >
+                        <Pencil className="size-4" />
+                    </Button>
+                )}
                 {/* <Button
                     size="icon-sm"
                     className="bg-green-500 hover:bg-green-600 shadow-none"
