@@ -11,6 +11,7 @@ import propertyRoutes from "./routes/property/property.route"
 import uploadRoutes from "./routes/upload/upload.route"
 import supportRoutes from "./routes/support/support.route"
 import savedPropertyRoutes from "./routes/savedProperty/savedProperty.route"
+import savedExclusivePropertyRoutes from "./routes/savedExclusiveProperty/savedExclusiveProperty.route"
 import metadataRoutes from "./routes/metadata/metadata.route"
 import appointmentRoutes from "./routes/appointment/appointment.route"
 import staffRoutes from "./routes/staff/staff.routes"
@@ -50,6 +51,7 @@ app.use(`${process.env.API_VERSION}/property`,propertyRoutes);
 app.use(`${process.env.API_VERSION}/upload`,uploadRoutes);
 app.use(`${process.env.API_VERSION}/support`,supportRoutes);
 app.use(`${process.env.API_VERSION}/saved-properties`,savedPropertyRoutes);
+app.use(`${process.env.API_VERSION}/saved-exclusive-properties`,savedExclusivePropertyRoutes);
 app.use(`${process.env.API_VERSION}/metadata`,metadataRoutes);
 app.use(`${process.env.API_VERSION}/appointments`,appointmentRoutes);
 app.use(`${process.env.API_VERSION}/staff`,staffRoutes);
