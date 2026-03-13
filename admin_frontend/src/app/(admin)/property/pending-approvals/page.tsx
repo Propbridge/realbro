@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
 import { Button } from "@/components/ui/button"
@@ -23,47 +23,38 @@ export default function PendingApprovalsPage() {
     const [properties, setProperties] = useState<PropertyCardData[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [actionMessage, setActionMessage] = useState<string | null>(null)
 
     const isSuperAdmin = user?.role === "SUPER_ADMIN"
 
-    useEffect(() => {
-        let isMounted = true
+    const fetchProperties = useCallback(async () => {
+        const endpoint =
+            activeTab === "pending-approvals"
+                ? "/staff/properties/pending-approvals"
+                : "/staff/properties/pending-exclusive"
 
-        const fetchProperties = async () => {
-            const endpoint =
-                activeTab === "pending-approvals"
-                    ? "/staff/properties/pending-approvals"
-                    : "/staff/properties/pending-exclusive"
-
-            try {
-                setIsLoading(true)
-                setError(null)
-                const response = await api.get<{ success: boolean; data: PropertyCardData[] }>(endpoint, {
-                    params: { page: 1, limit: 50 },
-                })
-
-                if (!isMounted) return
-                setProperties(response.data.data ?? [])
-            } catch (err) {
-                if (!isMounted) return
-                setError("Failed to load properties")
-                setProperties([])
-                if (activeTab === "pending-exclusive" && (err as { response?: { status?: number } })?.response?.status === 403) {
-                    setError("You do not have permission to view this section")
-                }
-                console.error("Failed to fetch pending properties:", err)
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false)
-                }
+        try {
+            setIsLoading(true)
+            setError(null)
+            const response = await api.get<{ success: boolean; data: PropertyCardData[] }>(endpoint, {
+                params: { page: 1, limit: 50 },
+            })
+            setProperties(response.data.data ?? [])
+        } catch (err) {
+            setError("Failed to load properties")
+            setProperties([])
+            if (activeTab === "pending-exclusive" && (err as { response?: { status?: number } })?.response?.status === 403) {
+                setError("You do not have permission to view this section")
             }
-        }
-
-        fetchProperties()
-        return () => {
-            isMounted = false
+            console.error("Failed to fetch pending properties:", err)
+        } finally {
+            setIsLoading(false)
         }
     }, [activeTab])
+
+    useEffect(() => {
+        void fetchProperties()
+    }, [fetchProperties])
 
     const filteredProperties = useMemo(() => {
         const query = globalFilter.trim().toLowerCase()
@@ -93,6 +84,19 @@ export default function PendingApprovalsPage() {
 
     const handleEdit = (propertyId: string) => {
         router.push(`/property/${propertyId}`)
+    }
+
+    const handleAcquisitionDecision = async (propertyId: string, decision: "APPROVED" | "REJECTED") => {
+        if (!isSuperAdmin) return
+        try {
+            setActionMessage(null)
+            await api.post("/staff/properties/acquisition-request-approval", { propertyId, decision })
+            setActionMessage(`Request ${decision === "APPROVED" ? "approved" : "rejected"} successfully`)
+            await fetchProperties()
+        } catch (err) {
+            console.error("Failed to process acquisition request:", err)
+            setActionMessage(`Failed to ${decision === "APPROVED" ? "approve" : "reject"} request`)
+        }
     }
 
     return (
@@ -142,6 +146,7 @@ export default function PendingApprovalsPage() {
             </div>
 
             <div className="flex gap-4 mt-4 px-2">
+                {actionMessage && <p className="text-sm px-4 text-blue-600">{actionMessage}</p>}
                 {isLoading && <p className="text-sm text-gray-500 px-4">Loading...</p>}
                 {error && <p className="text-sm text-red-500 px-4">{error}</p>}
                 {!isLoading && !error && (
@@ -149,6 +154,16 @@ export default function PendingApprovalsPage() {
                         properties={filteredProperties}
                         variant="default"
                         onEdit={handleEdit}
+                        onApprove={
+                            activeTab === "pending-approvals" && isSuperAdmin
+                                ? (id) => handleAcquisitionDecision(id, "APPROVED")
+                                : undefined
+                        }
+                        onReject={
+                            activeTab === "pending-approvals" && isSuperAdmin
+                                ? (id) => handleAcquisitionDecision(id, "REJECTED")
+                                : undefined
+                        }
                     />
                 )}
             </div>

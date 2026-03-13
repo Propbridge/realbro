@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { ParkingCircle } from "lucide-react"
 import { PropertyImageCarousel } from "@/components/propertyDetails/propertyImageCarousel"
+import type { ExclusivePropertyStatus, PropertyStatus } from "@/components/propertyDetails/propertyImageCarousel"
 import { PropertyMap } from "@/components/propertyDetails/propertyMap"
-import type { PropertyDisplayStatus } from "@/components/propertyDetails/propertyImageCarousel"
 import { PropertyBrokerInfo } from "@/components/propertyDetails/propertyBrokerInfo"
 import { PropertyActionBar } from "@/components/propertyDetails/propertyActionBar"
 import { PropertyDetailsPanel } from "@/components/propertyDetails/propertyDetailsPanel"
@@ -179,13 +179,6 @@ export default function PropertyPage() {
         }
     }
 
-    const displayStatus: PropertyDisplayStatus = useMemo(() => {
-        if (!property) return "AVAILABLE"
-        if (property.status === "UNLISTED") return "UNLISTED"
-        if (SOLD_STATUSES.includes(property.status) || property.exclusiveProperty?.status === "SOLD_OUT") return "SOLD"
-        return "AVAILABLE"
-    }, [property])
-
     const mediaItems = useMemo(() => {
         if (!property?.media?.length) return [{ url: FALLBACK_IMAGE, mediaType: "IMAGE" }]
         return [...property.media]
@@ -276,7 +269,8 @@ export default function PropertyPage() {
                 <div className="w-1/2">
                     <PropertyImageCarousel
                         media={mediaItems}
-                        status={displayStatus}
+                        propertyStatus={property.status as PropertyStatus}
+                        exclusiveStatus={property.exclusiveProperty?.status as ExclusivePropertyStatus | undefined}
                         isExclusive={Boolean(property.exclusiveProperty)}
                         gems={property.exclusiveProperty?.fixedRewardGems}
                     />

@@ -24,10 +24,10 @@ import {
     Sun,
     Layers,
     Sofa,
-    MoreVertical,
     Pencil,
     ShoppingCart,
     CheckCircle,
+    XCircle,
     Gem,
     Crown,
     Bookmark,
@@ -62,6 +62,8 @@ interface PropertyCardProps {
     onEdit?: (id: string) => void
     onBuy?: (id: string) => void | Promise<void>
     onMarkAsSold?: (id: string) => void
+    onApprove?: (id: string) => void | Promise<void>
+    onReject?: (id: string) => void | Promise<void>
     onFavorite?: (id: string) => void
     /** When false, hides the Edit button (e.g. on User's Listings page) */
     showEditButton?: boolean
@@ -74,7 +76,17 @@ const statusColors: Record<PropertyCardData["status"], string> = {
     Pending: "bg-yellow-500",
 }
 
-export function PropertyCard({ property, variant = "default", onEdit, onBuy, onMarkAsSold, onFavorite, showEditButton = true }: PropertyCardProps) {
+export function PropertyCard({
+    property,
+    variant = "default",
+    onEdit,
+    onBuy,
+    onMarkAsSold,
+    onApprove,
+    onReject,
+    onFavorite,
+    showEditButton = true,
+}: PropertyCardProps) {
     const router = useRouter()
     const isExclusive = variant === "exclusive"
     const { user } = useAuth()
@@ -213,7 +225,32 @@ export function PropertyCard({ property, variant = "default", onEdit, onBuy, onM
                         </Button>
                     )}
 
-                    {isExclusive ? (
+                    {property.status === "Pending" && (onApprove || onReject) ? (
+                        <>
+                            {onApprove && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-[11px] text-green-700 border-green-300 hover:bg-green-50"
+                                    onClick={() => void onApprove(property.id)}
+                                >
+                                    <CheckCircle className="size-3 mr-1" />
+                                    Approve
+                                </Button>
+                            )}
+                            {onReject && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-[11px] text-red-700 border-red-300 hover:bg-red-50"
+                                    onClick={() => void onReject(property.id)}
+                                >
+                                    <XCircle className="size-3 mr-1" />
+                                    Reject
+                                </Button>
+                            )}
+                        </>
+                    ) : isExclusive ? (
                         <Button
                             variant="outline"
                             size="sm"

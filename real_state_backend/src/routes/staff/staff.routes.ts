@@ -5,11 +5,12 @@ import staffAuthRoutes from "./staff.auth";
 import staffGemsRoutes from "./gems.routes";
 import staffPropertyRoutes from "./property.routes";
 import userRoutes from "./user.routes";
+import bannerRoutes from "./banner.routes";
 
 router.use('/auth', staffAuthRoutes);
 router.use('/management', staffManagementRoutes);
 router.use('/gems', staffGemsRoutes);
 router.use('/properties', staffPropertyRoutes);
 router.use('/users', userRoutes);
-
+router.use('/banners', bannerRoutes);
 export default router;

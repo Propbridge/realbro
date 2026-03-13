@@ -13,6 +13,7 @@ import type { ExportColumn } from "@/components/role_management/exportButton"
 // import type { PendingApprovalData } from "@/components/properties/pendingApprovalCard"
 import { api } from "@/lib/api"
 import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
+import { AxiosError } from "axios"
 
 // const mockPendingApprovals: PendingApprovalData[] = [
 //     { id: "p1", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/smallBuilding.png" },
@@ -136,7 +137,11 @@ export default function AllPropertiesPage() {
             setActionMessage(response.data.message ?? "Request submitted successfully")
         } catch (err) {
             console.error("Failed to buy/request property:", err)
-            setActionMessage("Failed to process property acquisition")
+            const message =
+                err instanceof AxiosError && (err.response?.data as { message?: string })?.message
+                    ? String((err.response?.data as { message?: string }).message)
+                    : "Failed to process property acquisition"
+            setActionMessage(message)
         }
     }
 

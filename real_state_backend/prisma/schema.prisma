@@ -684,3 +684,21 @@ model GemTransaction {
   @@index([requestId])
   @@map("gem_transactions")
 }
+
+model Banner{
+  id String @id @default(cuid())
+  title String?
+  image String
+  imageKey String
+  status BannerStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([status])
+  @@map("banners")
+}
+
+enum BannerStatus {
+  INACTIVE
+  ACTIVE
+}

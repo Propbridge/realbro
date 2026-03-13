@@ -4,8 +4,17 @@ import { useState } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Crown, Gem, ImageIcon, Video } from "lucide-react"
 
-/** User-facing display status for property image overlay */
-export type PropertyDisplayStatus = "AVAILABLE" | "SOLD" | "UNLISTED"
+export type PropertyStatus =
+    | "ACTIVE"
+    | "UNLISTED"
+    | "SOLDOFFLINE"
+    | "SOLDTOREALBRO"
+    | "SOLDFROMLISTINGS"
+    | "DRAFT"
+    | "SOLDEXCLUSIVEPROPERTY"
+    | "PENDING_EXCLUSIVE_ACQUISITION"
+
+export type ExclusivePropertyStatus = "ACTIVE" | "SOLD_OUT" | "ARCHIVED"
 
 export type MediaItem = { url: string; mediaType: string }
 
@@ -14,18 +23,49 @@ interface PropertyImageCarouselProps {
     images?: string[]
     /** Media items (images + videos) ordered by display order */
     media?: MediaItem[]
-    /** Property display status for overlay badge */
-    status?: PropertyDisplayStatus
+    /** Normal property status (used when not exclusive) */
+    propertyStatus?: PropertyStatus | null
+    /** Exclusive property status (used when property is exclusive) */
+    exclusiveStatus?: ExclusivePropertyStatus | null
     /** When set, show exclusive badge and gems */
     isExclusive?: boolean
     /** Gems count for exclusive properties (shown top-left with Crown + gems) */
     gems?: number
 }
 
-const statusStyles: Record<PropertyDisplayStatus, string> = {
-    AVAILABLE: "bg-green-600",
-    SOLD: "bg-red-600",
-    UNLISTED: "bg-gray-600",
+function getStatusBadge(
+    isExclusive: boolean,
+    propertyStatus?: PropertyStatus | null,
+    exclusiveStatus?: ExclusivePropertyStatus | null
+): { label: string; className: string } {
+    const formatStatusLabel = (value: string): string => {
+        const knownLabels: Record<string, string> = {
+            SOLDTOREALBRO: "SOLD TO REAL BRO",
+            SOLDFROMLISTINGS: "SOLD FROM LISTINGS",
+            SOLDOFFLINE: "SOLD OFFLINE",
+            SOLDEXCLUSIVEPROPERTY: "SOLD EXCLUSIVE PROPERTY",
+            PENDING_EXCLUSIVE_ACQUISITION: "PENDING EXCLUSIVE ACQUISITION",
+            SOLD_OUT: "SOLD OUT",
+        }
+        if (knownLabels[value]) return knownLabels[value]
+        return value.replace(/_/g, " ").replace(/\s+/g, " ").trim()
+    }
+
+    if (isExclusive) {
+        const status = exclusiveStatus ?? "ACTIVE"
+        if (status === "SOLD_OUT") return { label: formatStatusLabel("SOLD_OUT"), className: "bg-red-600" }
+        if (status === "ARCHIVED") return { label: formatStatusLabel("ARCHIVED"), className: "bg-gray-600" }
+        return { label: formatStatusLabel("ACTIVE"), className: "bg-green-600" }
+    }
+
+    const status = propertyStatus ?? "ACTIVE"
+    if (status === "ACTIVE") return { label: formatStatusLabel("ACTIVE"), className: "bg-green-600" }
+    if (status === "UNLISTED") return { label: formatStatusLabel("UNLISTED"), className: "bg-gray-600" }
+    if (status === "DRAFT") return { label: formatStatusLabel("DRAFT"), className: "bg-yellow-600" }
+    if (status === "PENDING_EXCLUSIVE_ACQUISITION") {
+        return { label: formatStatusLabel("PENDING_EXCLUSIVE_ACQUISITION"), className: "bg-blue-600" }
+    }
+    return { label: formatStatusLabel(status), className: "bg-red-600" }
 }
 
 function resolveMediaItems(media?: MediaItem[], images?: string[]): MediaItem[] {
@@ -38,11 +78,19 @@ function resolveMediaItems(media?: MediaItem[], images?: string[]): MediaItem[] 
     return []
 }
 
-export function PropertyImageCarousel({ images, media, status = "AVAILABLE", isExclusive, gems }: PropertyImageCarouselProps) {
+export function PropertyImageCarousel({
+    images,
+    media,
+    propertyStatus,
+    exclusiveStatus,
+    isExclusive = false,
+    gems,
+}: PropertyImageCarouselProps) {
     const items = resolveMediaItems(media, images)
     const [currentIndex, setCurrentIndex] = useState(0)
     const currentItem = items[currentIndex]
     const isVideo = currentItem?.mediaType === "VIDEO"
+    const badge = getStatusBadge(isExclusive, propertyStatus, exclusiveStatus)
 
     const goToPrevious = () => {
         setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1))
@@ -77,11 +125,9 @@ export function PropertyImageCarousel({ images, media, status = "AVAILABLE", isE
             )}
 
             <div className="absolute top-4 left-4 flex flex-col gap-2">
-                {status && (
-                    <span className={`${statusStyles[status]} text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide`}>
-                        {status}
-                    </span>
-                )}
+                <span className={`${badge.className} text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide`}>
+                    {badge.label}
+                </span>
                 {isExclusive && (
                     <span className="bg-blue-600 text-white text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5 w-fit">
                         <Crown className="size-3.5" />

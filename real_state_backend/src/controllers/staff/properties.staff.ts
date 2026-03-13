@@ -163,7 +163,13 @@ export async function acquisitionRequest(req: Request, res: Response) {
         if (!property) {
             return res.status(404).json({ message: "Property not found" });
         }
+        const existingRequest = await prisma.propertyAcquisitionRequest.findUnique({
+            where: { propertyId },
+        });
         if (role !== "SUPER_ADMIN") {
+            if (existingRequest?.status === "PENDING") {
+                return res.status(409).json({ message: "Property is already requested for property acquisition" });
+            }
             await prisma.propertyAcquisitionRequest.create({
                 data: {
                     propertyId,
@@ -173,9 +179,6 @@ export async function acquisitionRequest(req: Request, res: Response) {
             })
             return res.status(200).json({ message: "Acquisition requested successfully" });
         } else if (role === "SUPER_ADMIN") {
-            const existingRequest = await prisma.propertyAcquisitionRequest.findUnique({
-                where: { propertyId },
-            });
             if (existingRequest) {
                 const acquisitionRequest = await prisma.propertyAcquisitionRequest.update({
                     where: { propertyId },
@@ -809,7 +812,7 @@ export async function getProperty(req: Request, res: Response) {
                     where: { id: exclusive.sourcePropertyId },
                     include: {
                         media: true,
-                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true, latitude: true, longitude: true } },
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, avatarKey: true } },
                         exclusiveProperty: { select: { id: true, status: true, fixedRewardGems: true } },
                     },
                 });

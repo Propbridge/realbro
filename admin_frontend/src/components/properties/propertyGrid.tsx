@@ -8,12 +8,24 @@ interface PropertyGridProps {
     onEdit?: (id: string) => void
     onBuy?: (id: string) => void
     onMarkAsSold?: (id: string) => void
+    onApprove?: (id: string) => void
+    onReject?: (id: string) => void
     onFavorite?: (id: string) => void
     /** When false, hides the Edit button on each card (e.g. on User's Listings page) */
     showEditButton?: boolean
 }
 
-export function PropertyGrid({ properties, variant = "default", onEdit, onBuy, onMarkAsSold, onFavorite, showEditButton = true }: PropertyGridProps) {
+export function PropertyGrid({
+    properties,
+    variant = "default",
+    onEdit,
+    onBuy,
+    onMarkAsSold,
+    onApprove,
+    onReject,
+    onFavorite,
+    showEditButton = true,
+}: PropertyGridProps) {
     return (
         <div className=" pr-2" style={{ maxHeight: "calc(100vh - 140px)" }}>
             <div className="grid grid-cols-3 gap-4">
@@ -25,6 +37,8 @@ export function PropertyGrid({ properties, variant = "default", onEdit, onBuy, o
                         onEdit={onEdit}
                         onBuy={onBuy}
                         onMarkAsSold={onMarkAsSold}
+                        onApprove={onApprove}
+                        onReject={onReject}
                         onFavorite={onFavorite}
                         showEditButton={showEditButton}
                     />

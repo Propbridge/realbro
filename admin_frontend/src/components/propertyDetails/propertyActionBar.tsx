@@ -66,7 +66,9 @@ export function PropertyActionBar({
         : `/property/all-listings/${propertyId}/edit`
 
     const isExclusiveSold = exclusiveStatus === "SOLD_OUT"
-    const soldToggleLabel = isSold || isExclusiveSold ? "Mark as Available" : "Mark as Sold"
+    const soldToggleLabel = isExclusive
+        ? "Mark as Sold"
+        : (isSold || isExclusiveSold ? "Mark as Available" : "Mark as Sold")
     const listUnlistLabel = isListed ? "Unlist Property" : "List Property"
 
     const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
@@ -177,14 +179,16 @@ export function PropertyActionBar({
             </div>
 
 
-            <Button
-                className={makeExclusiveEnabled ? "bg-blue-600 hover:bg-blue-700" : `bg-gray-400 ${disabledBtnClass}`}
-                onClick={() => propertyId && makeExclusiveEnabled && router.push(`/property/make-it-exclusive/${propertyId}`)}
-                disabled={!makeExclusiveEnabled}
-            >
-                <CheckCircle className="size-3.5" />
-                Make It Exclusive
-            </Button>
+            {!isExclusive && (
+                <Button
+                    className={makeExclusiveEnabled ? "bg-blue-600 hover:bg-blue-700" : `bg-gray-400 ${disabledBtnClass}`}
+                    onClick={() => propertyId && makeExclusiveEnabled && router.push(`/property/make-it-exclusive/${propertyId}`)}
+                    disabled={!makeExclusiveEnabled}
+                >
+                    <CheckCircle className="size-3.5" />
+                    Make It Exclusive
+                </Button>
+            )}
         </div>
     )
 }

@@ -50,7 +50,7 @@ const items = [
         children: [
             { title: "User's Listings", url: "/property/all-listings", icon: Home },
             { title: "Exclusive Listings", url: "/property/exclusive-listings", icon: Crown },
-            { title: "Pending Approvals", url: "/property/pending-approvals", icon: Clock4Icon},
+            { title: "Pending Approvals", url: "/property/pending-approvals", icon: Clock4Icon, roles: ["SUPER_ADMIN"] as const },
         ],
     },
     {
