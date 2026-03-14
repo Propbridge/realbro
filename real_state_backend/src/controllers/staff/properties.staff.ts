@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import z from "zod";
+import { NotificationType } from "@prisma/client";
 import { createExclusivePropertySchema, updateExclusivePropertySchema } from "../../validators/property.validators";
+import { broadcastNotificationToAllUsers } from "../../services/notification.service";
 
 async function resolveStaffActorId(staffId: string, role: string): Promise<string | null> {
     if (role !== "SUPER_ADMIN") {
@@ -431,6 +433,24 @@ export async function createExclusiveProperty(req: Request, res: Response) {
                 originalUser: { select: { id: true, firstName: true, lastName: true, email: true } },
                 media: true,
             },
+        });
+
+        const locationParts = [property.locality, property.city, property.state].filter(Boolean);
+        const locationLabel = locationParts.length ? locationParts.join(", ") : "your city";
+
+        // Send announcement in background so property conversion response stays fast.
+        broadcastNotificationToAllUsers({
+            type: NotificationType.EXCLUSIVE_PROPERTY_ADDED,
+            title: "New exclusive property added",
+            description: `${exclusiveProperty.title} is now live in ${locationLabel}.`,
+            data: {
+                exclusivePropertyId: exclusiveProperty.id,
+                sourcePropertyId: property.id,
+                title: exclusiveProperty.title,
+                location: locationLabel,
+            },
+        }).catch((notificationError) => {
+            console.error("Exclusive property broadcast notification error:", notificationError);
         });
 
         return res.status(201).json({
