@@ -39,6 +39,10 @@ export async function acceptAppointment(id: string): Promise<void> {
     await api.put(`/staff/appointments/${id}/accept`);
 }
 
+export async function completeAppointment(id: string): Promise<void> {
+    await api.put(`/staff/appointments/${id}/complete`);
+}
+
 export async function rejectAppointment(id: string): Promise<void> {
     await api.put(`/staff/appointments/${id}/reject`);
 }

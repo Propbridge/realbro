@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Check, Clock, Eye, X } from "lucide-react"
+import { Check, CheckCircle2, Clock, Eye, X } from "lucide-react"
 import { ArrowUpDown } from "lucide-react"
 import {
     Dialog,
@@ -14,7 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { acceptAppointment, rejectAppointment } from "@/actions/appointments"
+import { acceptAppointment, rejectAppointment, completeAppointment } from "@/actions/appointments"
 
 export type AppointmentTableInterface = {
     id: string
@@ -30,14 +30,16 @@ export type AppointmentTableInterface = {
     status: string
     notes: string | null
     canAcceptReject: boolean
+    canMarkCompleted: boolean
 }
 
 function ActionsCell({ row, onSuccess }: { row: AppointmentTableInterface; onSuccess: () => void }) {
-    const [loading, setLoading] = useState<"accept" | "reject" | null>(null)
+    const [loading, setLoading] = useState<"accept" | "reject" | "complete" | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [detailsOpen, setDetailsOpen] = useState(false)
     const [acceptOpen, setAcceptOpen] = useState(false)
     const [rejectOpen, setRejectOpen] = useState(false)
+    const [completeOpen, setCompleteOpen] = useState(false)
 
     const runAccept = async () => {
         setLoading("accept")
@@ -61,6 +63,21 @@ function ActionsCell({ row, onSuccess }: { row: AppointmentTableInterface; onSuc
         setDetailsOpen(false)
         try {
             await rejectAppointment(row.id)
+            onSuccess()
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Request failed")
+        } finally {
+            setLoading(null)
+        }
+    }
+
+    const runComplete = async () => {
+        setLoading("complete")
+        setError(null)
+        setCompleteOpen(false)
+        setDetailsOpen(false)
+        try {
+            await completeAppointment(row.id)
             onSuccess()
         } catch (err) {
             setError(err instanceof Error ? err.message : "Request failed")
@@ -104,6 +121,18 @@ function ActionsCell({ row, onSuccess }: { row: AppointmentTableInterface; onSuc
                             <X className="size-4" />
                         </Button>
                     </>
+                )}
+                {row.canMarkCompleted && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:text-white bg-emerald-600 text-white hover:bg-emerald-700 rounded-full"
+                        onClick={() => setCompleteOpen(true)}
+                        disabled={!!loading}
+                        title="Mark as Completed"
+                    >
+                        <CheckCircle2 className="size-4" />
+                    </Button>
                 )}
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
@@ -192,6 +221,18 @@ function ActionsCell({ row, onSuccess }: { row: AppointmentTableInterface; onSuc
                                 </Button>
                             </>
                         )}
+                        {row.canMarkCompleted && (
+                            <Button
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() => {
+                                    setDetailsOpen(false)
+                                    setCompleteOpen(true)
+                                }}
+                                disabled={!!loading}
+                            >
+                                Mark as Completed
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -217,6 +258,24 @@ function ActionsCell({ row, onSuccess }: { row: AppointmentTableInterface; onSuc
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setRejectOpen(false)}>Cancel</Button>
                         <Button variant="destructive" onClick={runReject} disabled={!!loading}>Reject</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Mark as Completed</DialogTitle>
+                        <DialogDescription>Mark this appointment for {row.purpose} as completed?</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCompleteOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={runComplete}
+                            disabled={!!loading}
+                        >
+                            Mark as Completed
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

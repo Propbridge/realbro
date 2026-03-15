@@ -128,7 +128,7 @@ export async function acceptAppointment(req: Request, res: Response) {
 
         const updated = await prisma.appointment.update({
             where: { id: appointmentId },
-            data: { status: "COMPLETED", staffHandlerId },
+            data: { status: "WAITING", staffHandlerId },
             include: {
                 property: { select: { id: true, title: true } },
                 user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
@@ -141,7 +141,7 @@ export async function acceptAppointment(req: Request, res: Response) {
                 userId: appointment.userId,
                 type: NotificationType.APPOINTMENT_UPDATED,
                 title: "Appointment accepted",
-                description: `Your appointment for ${appointment.property.title} has been confirmed by staff.`,
+                description: `Your appointment for ${appointment.property.title} is now waiting for completion.`,
                 data: { appointmentId, propertyId: appointment.propertyId }
             });
         } catch (e) {
@@ -151,6 +151,69 @@ export async function acceptAppointment(req: Request, res: Response) {
         return res.status(200).json({ success: true, message: "Appointment accepted", data: updated });
     } catch (error) {
         console.error("Accept appointment error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function completeAppointment(req: Request, res: Response) {
+    try {
+        const appointmentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const actorId = req.user?.id;
+        const role = req.user?.role;
+
+        if (!appointmentId) {
+            return res.status(400).json({ message: "Invalid appointment ID" });
+        }
+        if (!actorId || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const staffHandlerId = await resolveStaffHandlerId(actorId, role);
+        if (!staffHandlerId) {
+            return res.status(401).json({ message: "Could not resolve staff handler" });
+        }
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { id: appointmentId },
+            include: {
+                property: { select: { title: true } },
+                user: { select: { id: true } }
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ message: "Appointment not found" });
+        }
+
+        if (appointment.status !== "WAITING") {
+            return res.status(400).json({ message: "Only appointments in Waiting status can be marked as completed" });
+        }
+
+        const updated = await prisma.appointment.update({
+            where: { id: appointmentId },
+            data: { status: "COMPLETED", staffHandlerId },
+            include: {
+                property: { select: { id: true, title: true } },
+                user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+                staffHandler: { select: { id: true, firstName: true, lastName: true, role: true } }
+            }
+        });
+
+        try {
+            await createAndSendUserNotification({
+                userId: appointment.userId,
+                type: NotificationType.APPOINTMENT_UPDATED,
+                title: "Appointment completed",
+                description: `Your appointment for ${appointment.property.title} has been completed.`,
+                data: { appointmentId, propertyId: appointment.propertyId }
+            });
+        } catch (e) {
+            console.error("Appointment complete notification error:", e);
+        }
+
+        return res.status(200).json({ success: true, message: "Appointment marked as completed", data: updated });
+    } catch (error) {
+        console.error("Complete appointment error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }

@@ -69,7 +69,8 @@ function mapAppointmentToRow(a: AppointmentApi): AppointmentTableInterface {
         isPreBooked: a.isPreBooked,
         status: statusDisplayMap[a.status] ?? a.status,
         notes: a.notes ?? null,
-        canAcceptReject: a.status === "SCHEDULED" || a.status === "WAITING",
+        canAcceptReject: a.status === "SCHEDULED",
+        canMarkCompleted: a.status === "WAITING",
     }
 }
 
