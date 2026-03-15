@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Filter } from "@/components/appointments/filterAppointments"
+import { PropertiesFilter } from "@/components/properties/propertiesFilter"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
@@ -161,7 +161,7 @@ export default function AllPropertiesPage() {
                         columns={exportColumns}
                         filename="all-listings"
                     />
-                    <Filter
+                    <PropertiesFilter
                         showOnlyBookmarked={showOnlyBookmarked}
                         onToggleBookmarked={(checked) => setShowOnlyBookmarked(checked)}
                     />
