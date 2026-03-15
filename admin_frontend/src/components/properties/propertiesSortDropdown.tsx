@@ -31,12 +31,14 @@ export function PropertiesSortDropdown({ sort, onSortChange }: PropertiesSortDro
                 <DropdownMenuItem
                     onClick={() => onSortChange("price-desc")}
                     className="font-medium cursor-pointer"
+                    data-state={sort === "price-desc" ? "checked" : undefined}
                 >
                     Price: High to low
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     onClick={() => onSortChange("price-asc")}
                     className="font-medium cursor-pointer"
+                    data-state={sort === "price-asc" ? "checked" : undefined}
                 >
                     Price: Low to high
                 </DropdownMenuItem>
@@ -55,7 +57,7 @@ export function sortPropertiesByPrice(
     properties: PropertyCardData[],
     sort: PropertySortOption
 ): PropertyCardData[] {
-    if (!sort || sort === "") return properties
+    if (!sort) return properties
     const arr = [...properties]
     arr.sort((a, b) => {
         const aVal = parsePrice(a.price)
