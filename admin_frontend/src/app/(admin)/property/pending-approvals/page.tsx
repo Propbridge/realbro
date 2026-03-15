@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
 import type { ExportColumn } from "@/components/role_management/exportButton"
 import { api } from "@/lib/api"
+import { PropertiesFilter } from "@/components/properties/propertiesFilter"
 
 type Tab = "pending-approvals" | "pending-exclusive"
 
@@ -115,7 +116,7 @@ export default function PendingApprovalsPage() {
                         columns={exportColumns}
                         filename={activeTab === "pending-exclusive" ? "pending-exclusive-properties" : "pending-approvals"}
                     />
-                    <Filter />
+                    <PropertiesFilter />
                     <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
                         <ArrowUpDown className="size-4 text-blue-500" />
                         Sort by

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Filter } from "@/components/appointments/filterAppointments"
+import { PropertiesFilter } from "@/components/properties/propertiesFilter"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
@@ -154,7 +154,7 @@ export default function ExclusivePropertiesPage() {
                         columns={exportColumns}
                         filename="exclusive-listings"
                     />
-                    <Filter />
+                    <PropertiesFilter />
                     <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
                         <ArrowUpDown className="size-4 text-blue-500" />
                         Sort by
