@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { hashPassword } from "../../utils/password";
 import { Prisma } from "@prisma/client";
+import { createOtp, sendOtpEmail, verifyOtp } from "../../services/otp.service";
 
 export async function getProfile(req: Request, res: Response) {
     try {
@@ -124,7 +125,11 @@ export async function updateProfile(req: Request, res: Response) {
         const data: Record<string, unknown> = {};
         if (firstName !== undefined) data.firstName = firstName;
         if (lastName !== undefined) data.lastName = lastName;
-        if (phone !== undefined) data.phone = phone;
+        if (phone !== undefined) {
+            return res.status(400).json({
+                message: "Use phone update OTP APIs to change phone number",
+            });
+        }
         if (avatar !== undefined) data.avatar = avatar;
         if (avatarKey !== undefined) data.avatarKey = avatarKey;
         if (age !== undefined) data.age = age;
@@ -182,5 +187,114 @@ export async function updateProfile(req: Request, res: Response) {
             }
         }
         return res.status(500).json({ message: "Internal server error" })
+    }
+}
+
+export async function sendPhoneUpdateOtp(req: Request, res: Response) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const { newPhone } = req.body as { newPhone: string };
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true, phone: true },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "User does not exist" });
+        }
+
+        if (user.phone === newPhone) {
+            return res.status(400).json({ message: "New phone is same as current phone" });
+        }
+
+        const existingPhoneUser = await prisma.user.findUnique({
+            where: { phone: newPhone },
+            select: { id: true },
+        });
+        if (existingPhoneUser) {
+            return res.status(409).json({ message: "Phone number already in use" });
+        }
+
+        const otpResult = await createOtp(userId, "PHONE");
+        await sendOtpEmail(
+            user.email,
+            otpResult.code,
+        );
+
+        return res.status(200).json({ message: "OTP sent to your registered email" });
+    } catch (error) {
+        console.error("Send phone update OTP error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function verifyPhoneUpdateOtp(req: Request, res: Response) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const { newPhone, code } = req.body as { newPhone: string; code: string };
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, phone: true },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "User does not exist" });
+        }
+
+        if (user.phone === newPhone) {
+            return res.status(400).json({ message: "New phone is same as current phone" });
+        }
+
+        const existingPhoneUser = await prisma.user.findUnique({
+            where: { phone: newPhone },
+            select: { id: true },
+        });
+        if (existingPhoneUser && existingPhoneUser.id !== userId) {
+            return res.status(409).json({ message: "Phone number already in use" });
+        }
+
+        const otpCheck = await verifyOtp(userId, code, "PHONE");
+        if (!otpCheck.valid) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+
+        try {
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: { phone: newPhone },
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                    age: true,
+                    gender: true,
+                    updatedAt: true,
+                },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Phone number updated successfully",
+                data: updatedUser,
+            });
+        } catch (error: unknown) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+                return res.status(409).json({ message: "Phone number already in use" });
+            }
+            throw error;
+        }
+    } catch (error) {
+        console.error("Verify phone update OTP error:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 }

@@ -54,16 +54,27 @@ export const updateProfileSchema = z.object({
     firstName: z.string().min(2, "First name must be atleast 2 characters").optional(),
     lastName: z.string().min(2, "last name must be atleast 2 characters").optional(),
     email: z.email("Invalid email").optional(),
-    phone: z.string().regex(
-        /^\+[1-9]\d{6,14}$/,
-        'Invalid phone number. Use international format: +1234567890'
-    ).optional(),
     password: z.string().min(6, "password must be atleast 6 characters long").optional(),
     avatar: z.string().url("Invalid avatar URL").optional(),
     avatarKey: z.string().optional(),
     age: z.number().int().min(18, "Age must be at least 18").max(120, "Invalid age").optional(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional()
 })
+
+export const sendPhoneUpdateOtpSchema = z.object({
+    newPhone: z.string().regex(
+        /^\+[1-9]\d{6,14}$/,
+        'Invalid phone number. Use international format: +1234567890'
+    ),
+});
+
+export const verifyPhoneUpdateOtpSchema = z.object({
+    newPhone: z.string().regex(
+        /^\+[1-9]\d{6,14}$/,
+        'Invalid phone number. Use international format: +1234567890'
+    ),
+    code: z.string().length(6, "OTP must be 6 digits"),
+});
 
 export const registerDeviceTokenSchema = z.object({
     token: z.string().min(10, "Invalid device token"),
@@ -95,3 +106,5 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 export type RegisterDeviceTokenInput = z.infer<typeof registerDeviceTokenSchema>;
 export type UnregisterDeviceTokenInput = z.infer<typeof unregisterDeviceTokenSchema>;
 export type SendTestNotificationInput = z.infer<typeof sendTestNotificationSchema>;
+export type SendPhoneUpdateOtpInput = z.infer<typeof sendPhoneUpdateOtpSchema>;
+export type VerifyPhoneUpdateOtpInput = z.infer<typeof verifyPhoneUpdateOtpSchema>;
