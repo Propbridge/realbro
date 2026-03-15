@@ -772,7 +772,7 @@ model PropertyRequirement {
   id                String                    @id @default(cuid())
   preferredLocation String
   subLocation       String?
-  propertyType      PropertyType?
+  propertyType      String?
   budgetMin         Float?
   budgetMax         Float?
   currency          String                    @default("INR")
@@ -784,7 +784,6 @@ model PropertyRequirement {
 
   @@index([userId])
   @@index([status])
-  @@index([propertyType])
   @@map("property_requirements")
 }
 
