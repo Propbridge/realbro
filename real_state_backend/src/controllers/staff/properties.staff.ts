@@ -553,9 +553,15 @@ export async function getPendingApprovalProperties(req: Request, res: Response) 
         const formatArea = (area?: string | null, carpetArea?: number | null, carpetAreaUnit?: string | null) => (area || (carpetArea != null ? `${carpetArea} ${carpetAreaUnit ?? ""}`.trim() : "N/A"));
         const formatLocation = (sub?: string | null, loc?: string | null, city?: string | null) => [sub, loc, city].filter(Boolean).join(", ") || "N/A";
 
+        const filterWhere = buildPropertyWhereFromQuery(req.query as Record<string, unknown>);
+        const baseWhere = {
+            acquisitionRequests: { some: { status: "PENDING" } },
+            ...filterWhere,
+        };
+
         const [properties, total] = await Promise.all([
             prisma.property.findMany({
-                where: { acquisitionRequests: { some: { status: "PENDING" } } },
+                where: baseWhere,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -566,7 +572,7 @@ export async function getPendingApprovalProperties(req: Request, res: Response) 
                     media: { where: { mediaType: "IMAGE" }, orderBy: { order: "asc" }, take: 1, select: { url: true } },
                 },
             }),
-            prisma.property.count({ where: { acquisitionRequests: { some: { status: "PENDING" } } } }),
+            prisma.property.count({ where: baseWhere }),
         ]);
 
         const data = properties.map((p) => ({
@@ -606,12 +612,16 @@ export async function getPendingExclusiveProperties(req: Request, res: Response)
         const formatArea = (area?: string | null, carpetArea?: number | null, carpetAreaUnit?: string | null) => (area || (carpetArea != null ? `${carpetArea} ${carpetAreaUnit ?? ""}`.trim() : "N/A"));
         const formatLocation = (sub?: string | null, loc?: string | null, city?: string | null) => [sub, loc, city].filter(Boolean).join(", ") || "N/A";
 
+        const filterWhere = buildPropertyWhereFromQuery(req.query as Record<string, unknown>);
+        const baseWhere = {
+            acquisitionRequests: { some: { status: "APPROVED" } },
+            exclusiveProperty: null,
+            ...filterWhere,
+        };
+
         const [properties, total] = await Promise.all([
             prisma.property.findMany({
-                where: {
-                    acquisitionRequests: { some: { status: "APPROVED" } },
-                    exclusiveProperty: null,
-                },
+                where: baseWhere,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -622,12 +632,7 @@ export async function getPendingExclusiveProperties(req: Request, res: Response)
                     media: { where: { mediaType: "IMAGE" }, orderBy: { order: "asc" }, take: 1, select: { url: true } },
                 },
             }),
-            prisma.property.count({
-                where: {
-                    acquisitionRequests: { some: { status: "APPROVED" } },
-                    exclusiveProperty: null,
-                },
-            }),
+            prisma.property.count({ where: baseWhere }),
         ]);
 
         const data = properties.map((p) => ({
@@ -653,6 +658,40 @@ export async function getPendingExclusiveProperties(req: Request, res: Response)
     }
 }
 
+function buildPropertyWhereFromQuery(query: Record<string, unknown>) {
+    const where: Record<string, unknown> = {};
+    const category = String(query.category ?? "").trim();
+    const propertyType = String(query.propertyType ?? "").trim();
+    const furnishingStatus = String(query.furnishingStatus ?? "").trim();
+    const priceMin = Number(query.priceMin);
+    const priceMax = Number(query.priceMax);
+
+    if (category && ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"].includes(category)) {
+        where.category = category;
+    }
+    if (propertyType && ["FLAT", "DUPLEX", "PLOT", "FARMLAND"].includes(propertyType)) {
+        where.propertyType = propertyType;
+    }
+    if (
+        furnishingStatus &&
+        ["FullyFurnished", "SemiFurnished", "Unfurnished", "FencedWired", "FertileLand", "OpenLand", "Cultivated"].includes(
+            furnishingStatus
+        )
+    ) {
+        where.furnishingStatus = furnishingStatus;
+    }
+    if (!Number.isNaN(priceMin) && priceMin > 0) {
+        (where as { listingPrice?: object }).listingPrice = { ...((where as { listingPrice?: object }).listingPrice as object), gte: priceMin };
+    }
+    if (!Number.isNaN(priceMax) && priceMax > 0) {
+        const lp = (where as { listingPrice?: object }).listingPrice;
+        (where as { listingPrice?: object }).listingPrice = typeof lp === "object" && lp && "gte" in lp
+            ? { ...lp, lte: priceMax }
+            : { lte: priceMax };
+    }
+    return where;
+}
+
 export async function getAllProperties(req: Request, res: Response) {
     try {
         if (!req.user?.id || !req.user?.role) {
@@ -661,6 +700,8 @@ export async function getAllProperties(req: Request, res: Response) {
         const page = Math.max(Number(req.query.page ?? 1), 1);
         const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
         const skip = (page - 1) * limit;
+
+        const filterWhere = buildPropertyWhereFromQuery(req.query as Record<string, unknown>);
 
         const formatFurnishing = (value?: string | null) => {
             if (!value) return "N/A";
@@ -685,12 +726,15 @@ export async function getAllProperties(req: Request, res: Response) {
             return parts.length ? parts.join(", ") : "N/A";
         };
 
+        const baseWhere = {
+            exclusiveProperty: null,
+            status: { in: ["ACTIVE", "UNLISTED", "DRAFT"] as const },
+            ...filterWhere,
+        };
+
         const [properties, total] = await Promise.all([
             prisma.property.findMany({
-                where: {
-                    exclusiveProperty: null,
-                    status: { in: ["ACTIVE", "UNLISTED", "DRAFT"] },
-                },
+                where: baseWhere,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -719,7 +763,7 @@ export async function getAllProperties(req: Request, res: Response) {
                     },
                 },
             }),
-            prisma.property.count({ where: { exclusiveProperty: null, status: { in: ["ACTIVE", "UNLISTED", "DRAFT"] } } }),
+            prisma.property.count({ where: baseWhere }),
         ]);
 
         const data = properties.map((property) => ({
@@ -757,8 +801,10 @@ export async function getAllExclusiveProperties(req: Request, res: Response) {
         const page = Math.max(Number(req.query.page ?? 1), 1);
         const limit = Math.min(Math.max(Number(req.query.limit ?? 10), 1), 100);
         const skip = (page - 1) * limit;
+        const filterWhere = buildPropertyWhereFromQuery(req.query as Record<string, unknown>);
         const [exclusiveProperties, total] = await Promise.all([
             prisma.exclusiveProperty.findMany({
+                where: Object.keys(filterWhere).length > 0 ? filterWhere : undefined,
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -782,7 +828,9 @@ export async function getAllExclusiveProperties(req: Request, res: Response) {
                     originalUser: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
                 },
             }),
-            prisma.exclusiveProperty.count(),
+            prisma.exclusiveProperty.count({
+                where: Object.keys(filterWhere).length > 0 ? filterWhere : undefined,
+            }),
         ]);
         return res.status(200).json({
             success: true,

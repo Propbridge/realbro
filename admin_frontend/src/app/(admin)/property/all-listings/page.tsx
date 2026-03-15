@@ -1,13 +1,21 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { PropertiesFilter } from "@/components/properties/propertiesFilter"
+import {
+    PropertiesFilter,
+    defaultPropertiesFilterState,
+    propertiesFilterToParams,
+    type PropertiesFilterState,
+} from "@/components/properties/propertiesFilter"
+import {
+    PropertiesSortDropdown,
+    sortPropertiesByPrice,
+    type PropertySortOption,
+} from "@/components/properties/propertiesSortDropdown"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
 // import { PendingApprovalList } from "@/components/properties/pendingApprovalList"
-import { Button } from "@/components/ui/button"
-import { ArrowUpDown, ChevronDown } from "lucide-react"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
 import type { ExportColumn } from "@/components/role_management/exportButton"
 // import type { PendingApprovalData } from "@/components/properties/pendingApprovalCard"
@@ -21,7 +29,11 @@ import { AxiosError } from "axios"
 
 export default function AllPropertiesPage() {
     const [globalFilter, setGlobalFilter] = useState("")
-    const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false)
+    const [propertyFilters, setPropertyFilters] = useState<PropertiesFilterState>({
+        ...defaultPropertiesFilterState,
+        showOnlyBookmarked: false,
+    })
+    const [priceSort, setPriceSort] = useState<PropertySortOption>("")
     const [properties, setProperties] = useState<PropertyCardData[]>([])
     const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(false)
@@ -35,13 +47,13 @@ export default function AllPropertiesPage() {
             try {
                 setIsLoading(true)
                 setError(null)
+                const params: Record<string, string | number> = { page: 1, limit: 20 }
+                Object.assign(params, propertiesFilterToParams(propertyFilters))
                 const [propertiesResponse, bookmarkIds] = await Promise.all([
                     api.get<{
                         success: boolean
                         data: PropertyCardData[]
-                    }>("/staff/properties", {
-                        params: { page: 1, limit: 20 },
-                    }),
+                    }>("/staff/properties", { params }),
                     fetchBookmarkedPropertyIds(),
                 ])
 
@@ -63,7 +75,7 @@ export default function AllPropertiesPage() {
         return () => {
             isMounted = false
         }
-    }, [])
+    }, [propertyFilters])
 
     const filteredProperties = useMemo(() => {
         const query = globalFilter.trim().toLowerCase()
@@ -71,19 +83,19 @@ export default function AllPropertiesPage() {
             ...property,
             isBookmarked: bookmarkedIds.has(property.id),
         }))
-        const filteredByBookmark = showOnlyBookmarked
+        let result = propertyFilters.showOnlyBookmarked
             ? withBookmarkState.filter((property) => property.isBookmarked)
             : withBookmarkState
-        if (!query) return filteredByBookmark
-
-        return filteredByBookmark.filter((property) => {
-            return (
-                property.title.toLowerCase().includes(query) ||
-                property.location.toLowerCase().includes(query) ||
-                property.status.toLowerCase().includes(query)
+        if (query) {
+            result = result.filter(
+                (property) =>
+                    property.title.toLowerCase().includes(query) ||
+                    property.location.toLowerCase().includes(query) ||
+                    property.status.toLowerCase().includes(query)
             )
-        })
-    }, [globalFilter, properties, bookmarkedIds, showOnlyBookmarked])
+        }
+        return sortPropertiesByPrice(result, priceSort)
+    }, [globalFilter, properties, bookmarkedIds, propertyFilters.showOnlyBookmarked, priceSort])
 
     const exportColumns: ExportColumn[] = [
         { key: "id", header: "ID" },
@@ -162,14 +174,11 @@ export default function AllPropertiesPage() {
                         filename="all-listings"
                     />
                     <PropertiesFilter
-                        showOnlyBookmarked={showOnlyBookmarked}
-                        onToggleBookmarked={(checked) => setShowOnlyBookmarked(checked)}
+                        filters={propertyFilters}
+                        onFiltersChange={setPropertyFilters}
+                        showBookmarkOption
                     />
-                    <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
-                        <ArrowUpDown className="size-4 text-blue-500" />
-                        Sort by
-                        <ChevronDown className="size-4" />
-                    </Button>
+                    <PropertiesSortDropdown sort={priceSort} onSortChange={setPriceSort} />
                 </div>
             </div>
 

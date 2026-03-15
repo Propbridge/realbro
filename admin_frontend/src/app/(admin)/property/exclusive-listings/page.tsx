@@ -2,24 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { PropertiesFilter } from "@/components/properties/propertiesFilter"
+import {
+    PropertiesFilter,
+    defaultPropertiesFilterState,
+    propertiesFilterToParams,
+    type PropertiesFilterState,
+} from "@/components/properties/propertiesFilter"
+import {
+    PropertiesSortDropdown,
+    sortPropertiesByPrice,
+    type PropertySortOption,
+} from "@/components/properties/propertiesSortDropdown"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
-import { Button } from "@/components/ui/button"
-import { ArrowUpDown, ChevronDown } from "lucide-react"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
 import type { ExportColumn } from "@/components/role_management/exportButton"
 import { api } from "@/lib/api"
-
-// const mockPendingExclusiveApprovals: PendingApprovalData[] = [
-//     { id: "p1", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/smallBuilding.png" },
-//     { id: "p2", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/largeBuilding.png" },
-//     { id: "p3", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/largeBuilding.png" },
-//     { id: "p4", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/largeBuilding.png" },
-//     { id: "p5", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/largeBuilding.png" },
-//     { id: "p6", title: "3BHK Villa in Arera Colony", location: "Arera Colony, Bhopal", imageUrl: "/largeBuilding.png" },
-// ]
+import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
 
 type ExclusiveApiRow = {
     id: string
@@ -43,6 +43,9 @@ type ExclusiveApiRow = {
 export default function ExclusivePropertiesPage() {
     const router = useRouter()
     const [globalFilter, setGlobalFilter] = useState("")
+    const [priceSort, setPriceSort] = useState<PropertySortOption>("")
+    const [propertyFilters, setPropertyFilters] = useState<PropertiesFilterState>(defaultPropertiesFilterState)
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
     const [exclusiveProperties, setExclusiveProperties] = useState<PropertyCardData[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -51,12 +54,13 @@ export default function ExclusivePropertiesPage() {
         try {
             setIsLoading(true)
             setError(null)
-            const response = await api.get<{
-                success: boolean
-                data: ExclusiveApiRow[]
-            }>("/staff/properties/exclusive", {
-                params: { page: 1, limit: 50 },
-            })
+            const params: Record<string, string | number> = { page: 1, limit: 50 }
+            Object.assign(params, propertiesFilterToParams(propertyFilters))
+            const [response, bookmarkIds] = await Promise.all([
+                api.get<{ success: boolean; data: ExclusiveApiRow[] }>("/staff/properties/exclusive", { params }),
+                fetchBookmarkedPropertyIds(),
+            ])
+            setBookmarkedIds(bookmarkIds)
             const mapped: PropertyCardData[] = (response.data.data ?? []).map((item) => {
                 const location = [item.subLocality, item.locality, item.city].filter(Boolean).join(", ") || "N/A"
                 return {
@@ -88,7 +92,34 @@ export default function ExclusivePropertiesPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [propertyFilters])
+
+    const handleToggleBookmark = useCallback(async (propertyId: string) => {
+        const currentlyBookmarked = bookmarkedIds.has(propertyId)
+        setBookmarkedIds((prev) => {
+            const next = new Set(prev)
+            if (currentlyBookmarked) next.delete(propertyId)
+            else next.add(propertyId)
+            return next
+        })
+        try {
+            const nowBookmarked = await toggleBookmark(propertyId, currentlyBookmarked)
+            setBookmarkedIds((prev) => {
+                const next = new Set(prev)
+                if (nowBookmarked) next.add(propertyId)
+                else next.delete(propertyId)
+                return next
+            })
+        } catch (err) {
+            setBookmarkedIds((prev) => {
+                const next = new Set(prev)
+                if (currentlyBookmarked) next.add(propertyId)
+                else next.delete(propertyId)
+                return next
+            })
+            console.error("Failed to toggle bookmark:", err)
+        }
+    }, [bookmarkedIds])
 
     const handleMarkAsSold = useCallback(
         async (sourcePropertyId: string) => {
@@ -114,13 +145,24 @@ export default function ExclusivePropertiesPage() {
 
     const filteredExclusiveProperties = useMemo(() => {
         const query = globalFilter.trim().toLowerCase()
-        if (!query) return exclusiveProperties
-        return exclusiveProperties.filter((property) =>
-            property.title.toLowerCase().includes(query) ||
-            property.location.toLowerCase().includes(query) ||
-            property.status.toLowerCase().includes(query),
-        )
-    }, [exclusiveProperties, globalFilter])
+        const bookmarkableId = (p: PropertyCardData) => p.detailId ?? p.id
+        const withBookmarkState = exclusiveProperties.map((p) => ({
+            ...p,
+            isBookmarked: bookmarkedIds.has(bookmarkableId(p)),
+        }))
+        let result = propertyFilters.showOnlyBookmarked
+            ? withBookmarkState.filter((p) => p.isBookmarked)
+            : withBookmarkState
+        if (query) {
+            result = result.filter(
+                (property) =>
+                    property.title.toLowerCase().includes(query) ||
+                    property.location.toLowerCase().includes(query) ||
+                    property.status.toLowerCase().includes(query),
+            )
+        }
+        return sortPropertiesByPrice(result, priceSort)
+    }, [exclusiveProperties, globalFilter, priceSort, bookmarkedIds, propertyFilters.showOnlyBookmarked])
 
     const exportColumns: ExportColumn[] = [
         { key: "id", header: "ID" },
@@ -154,12 +196,12 @@ export default function ExclusivePropertiesPage() {
                         columns={exportColumns}
                         filename="exclusive-listings"
                     />
-                    <PropertiesFilter />
-                    <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
-                        <ArrowUpDown className="size-4 text-blue-500" />
-                        Sort by
-                        <ChevronDown className="size-4" />
-                    </Button>
+                    <PropertiesFilter
+                        filters={propertyFilters}
+                        onFiltersChange={setPropertyFilters}
+                        showBookmarkOption
+                    />
+                    <PropertiesSortDropdown sort={priceSort} onSortChange={setPriceSort} />
                 </div>
             </div>
 
@@ -173,6 +215,7 @@ export default function ExclusivePropertiesPage() {
                             variant="exclusive"
                             onEdit={(exclusivePropertyId) => router.push(`/property/exclusive-listings/${exclusivePropertyId}/edit`)}
                             onMarkAsSold={handleMarkAsSold}
+                            onFavorite={handleToggleBookmark}
                         />
                     )}
                 </div>

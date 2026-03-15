@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Filter } from "@/components/appointments/filterAppointments"
 import { ExportButton } from "@/components/role_management/exportButton"
-import { ArrowUpDown, ChevronDown } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
 import type { ExportColumn } from "@/components/role_management/exportButton"
 import { api } from "@/lib/api"
-import { PropertiesFilter } from "@/components/properties/propertiesFilter"
+import { fetchBookmarkedPropertyIds, toggleBookmark } from "@/lib/bookmarks"
+import {
+    PropertiesFilter,
+    defaultPropertiesFilterState,
+    propertiesFilterToParams,
+    type PropertiesFilterState,
+} from "@/components/properties/propertiesFilter"
+import {
+    PropertiesSortDropdown,
+    sortPropertiesByPrice,
+    type PropertySortOption,
+} from "@/components/properties/propertiesSortDropdown"
 
 type Tab = "pending-approvals" | "pending-exclusive"
 
@@ -21,6 +30,9 @@ export default function PendingApprovalsPage() {
     const { user } = useAuth()
     const [activeTab, setActiveTab] = useState<Tab>("pending-approvals")
     const [globalFilter, setGlobalFilter] = useState("")
+    const [priceSort, setPriceSort] = useState<PropertySortOption>("")
+    const [propertyFilters, setPropertyFilters] = useState<PropertiesFilterState>(defaultPropertiesFilterState)
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
     const [properties, setProperties] = useState<PropertyCardData[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -37,10 +49,14 @@ export default function PendingApprovalsPage() {
         try {
             setIsLoading(true)
             setError(null)
-            const response = await api.get<{ success: boolean; data: PropertyCardData[] }>(endpoint, {
-                params: { page: 1, limit: 50 },
-            })
+            const params: Record<string, string | number> = { page: 1, limit: 50 }
+            Object.assign(params, propertiesFilterToParams(propertyFilters))
+            const [response, bookmarkIds] = await Promise.all([
+                api.get<{ success: boolean; data: PropertyCardData[] }>(endpoint, { params }),
+                fetchBookmarkedPropertyIds(),
+            ])
             setProperties(response.data.data ?? [])
+            setBookmarkedIds(bookmarkIds)
         } catch (err) {
             setError("Failed to load properties")
             setProperties([])
@@ -51,7 +67,7 @@ export default function PendingApprovalsPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [activeTab])
+    }, [activeTab, propertyFilters])
 
     useEffect(() => {
         void fetchProperties()
@@ -59,14 +75,23 @@ export default function PendingApprovalsPage() {
 
     const filteredProperties = useMemo(() => {
         const query = globalFilter.trim().toLowerCase()
-        if (!query) return properties
-        return properties.filter(
-            (p) =>
-                p.title.toLowerCase().includes(query) ||
-                p.location.toLowerCase().includes(query) ||
-                p.status.toLowerCase().includes(query),
-        )
-    }, [properties, globalFilter])
+        const withBookmarkState = properties.map((p) => ({
+            ...p,
+            isBookmarked: bookmarkedIds.has(p.id),
+        }))
+        let result = propertyFilters.showOnlyBookmarked
+            ? withBookmarkState.filter((p) => p.isBookmarked)
+            : withBookmarkState
+        if (query) {
+            result = result.filter(
+                (p) =>
+                    p.title.toLowerCase().includes(query) ||
+                    p.location.toLowerCase().includes(query) ||
+                    p.status.toLowerCase().includes(query),
+            )
+        }
+        return sortPropertiesByPrice(result, priceSort)
+    }, [properties, globalFilter, priceSort, bookmarkedIds, propertyFilters.showOnlyBookmarked])
 
     const exportColumns: ExportColumn[] = [
         { key: "id", header: "ID" },
@@ -82,6 +107,33 @@ export default function PendingApprovalsPage() {
         { key: "furnishing", header: "Furnishing" },
         { key: "postedDate", header: "Posted Date" },
     ]
+
+    const handleToggleBookmark = useCallback(async (propertyId: string) => {
+        const currentlyBookmarked = bookmarkedIds.has(propertyId)
+        setBookmarkedIds((prev) => {
+            const next = new Set(prev)
+            if (currentlyBookmarked) next.delete(propertyId)
+            else next.add(propertyId)
+            return next
+        })
+        try {
+            const nowBookmarked = await toggleBookmark(propertyId, currentlyBookmarked)
+            setBookmarkedIds((prev) => {
+                const next = new Set(prev)
+                if (nowBookmarked) next.add(propertyId)
+                else next.delete(propertyId)
+                return next
+            })
+        } catch (err) {
+            setBookmarkedIds((prev) => {
+                const next = new Set(prev)
+                if (currentlyBookmarked) next.add(propertyId)
+                else next.delete(propertyId)
+                return next
+            })
+            console.error("Failed to toggle bookmark:", err)
+        }
+    }, [bookmarkedIds])
 
     const handleMakeExclusive = (propertyId: string) => {
         router.push(`/property/make-it-exclusive/${propertyId}`)
@@ -116,12 +168,12 @@ export default function PendingApprovalsPage() {
                         columns={exportColumns}
                         filename={activeTab === "pending-exclusive" ? "pending-exclusive-properties" : "pending-approvals"}
                     />
-                    <PropertiesFilter />
-                    <Button variant="outline" className="hover:bg-zinc-50 gap-2 shadow-none border-2 h-10">
-                        <ArrowUpDown className="size-4 text-blue-500" />
-                        Sort by
-                        <ChevronDown className="size-4" />
-                    </Button>
+                    <PropertiesFilter
+                        filters={propertyFilters}
+                        onFiltersChange={setPropertyFilters}
+                        showBookmarkOption
+                    />
+                    <PropertiesSortDropdown sort={priceSort} onSortChange={setPriceSort} />
                 </div>
             </div>
 
@@ -156,6 +208,7 @@ export default function PendingApprovalsPage() {
                         variant="default"
                         showEditButton={false}
                         onEdit={undefined}
+                        onFavorite={handleToggleBookmark}
                         onApprove={
                             activeTab === "pending-approvals" && isSuperAdmin
                                 ? (id) => handleAcquisitionDecision(id, "APPROVED")

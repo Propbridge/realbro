@@ -172,7 +172,7 @@ export function PropertyCard({
                 </div>
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                     <button
-                        onClick={() => onFavorite?.(property.id)}
+                        onClick={() => onFavorite?.(property.detailId ?? property.id)}
                         className="h-7 w-7 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition"
                     >
                         <Bookmark
