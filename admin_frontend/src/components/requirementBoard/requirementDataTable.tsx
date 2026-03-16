@@ -147,7 +147,7 @@ export function RequirementDataTable<TData, TValue>({
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                    No requirements found.
                                 </TableCell>
                             </TableRow>
                         )}

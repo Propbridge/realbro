@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import {
     PropertiesFilter,
     defaultPropertiesFilterState,
     propertiesFilterToParams,
+    paramsToPropertiesFilterState,
     type PropertiesFilterState,
 } from "@/components/properties/propertiesFilter"
 import {
@@ -14,6 +16,7 @@ import {
 } from "@/components/properties/propertiesSortDropdown"
 import { ExportButton } from "@/components/role_management/exportButton"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { PropertyGrid } from "@/components/properties/propertyGrid"
 // import { PendingApprovalList } from "@/components/properties/pendingApprovalList"
 import type { PropertyCardData } from "@/components/properties/propertyCard"
@@ -28,11 +31,25 @@ import { AxiosError } from "axios"
 // ]
 
 export default function AllPropertiesPage() {
+    const searchParams = useSearchParams()
+    const initialFilters = useMemo(() => {
+        const fromUrl = paramsToPropertiesFilterState(searchParams, { showOnlyBookmarked: false })
+        const hasAnyParam = searchParams.has("category") || searchParams.has("propertyType") ||
+            searchParams.has("furnishingStatus") || searchParams.has("priceMin") ||
+            searchParams.has("priceMax") || searchParams.has("location")
+        return hasAnyParam ? fromUrl : { ...defaultPropertiesFilterState, showOnlyBookmarked: false }
+    }, [searchParams])
     const [globalFilter, setGlobalFilter] = useState("")
-    const [propertyFilters, setPropertyFilters] = useState<PropertiesFilterState>({
-        ...defaultPropertiesFilterState,
-        showOnlyBookmarked: false,
-    })
+    const [propertyFilters, setPropertyFilters] = useState<PropertiesFilterState>(initialFilters)
+
+    useEffect(() => {
+        const hasAnyParam = searchParams.has("category") || searchParams.has("propertyType") ||
+            searchParams.has("furnishingStatus") || searchParams.has("priceMin") ||
+            searchParams.has("priceMax") || searchParams.has("location")
+        if (hasAnyParam) {
+            setPropertyFilters(paramsToPropertiesFilterState(searchParams, { showOnlyBookmarked: false }))
+        }
+    }, [searchParams])
     const [priceSort, setPriceSort] = useState<PropertySortOption>("")
     const [properties, setProperties] = useState<PropertyCardData[]>([])
     const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
@@ -187,7 +204,27 @@ export default function AllPropertiesPage() {
                     {actionMessage && <p className="text-sm text-blue-600 mb-2">{actionMessage}</p>}
                     {isLoading && <p className="text-sm text-gray-500">Loading properties...</p>}
                     {error && <p className="text-sm text-red-500">{error}</p>}
-                    {!isLoading && !error && (
+                    {!isLoading && !error && filteredProperties.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                            <p className="text-muted-foreground text-center">
+                                No properties found. Try adjusting your filters or clearing them to see all listings.
+                            </p>
+                            {(propertyFilters.category ||
+                                propertyFilters.propertyType ||
+                                propertyFilters.furnishingStatus ||
+                                propertyFilters.priceMin ||
+                                propertyFilters.priceMax ||
+                                propertyFilters.location) && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setPropertyFilters({ ...defaultPropertiesFilterState, showOnlyBookmarked: propertyFilters.showOnlyBookmarked })}
+                                >
+                                    Clear filters
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    {!isLoading && !error && filteredProperties.length > 0 && (
                         <PropertyGrid
                             properties={filteredProperties}
                             onFavorite={handleToggleBookmark}

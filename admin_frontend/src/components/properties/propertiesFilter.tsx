@@ -35,6 +35,7 @@ export interface PropertiesFilterState {
     furnishingStatus: FurnishingFilter
     priceMin: string
     priceMax: string
+    location: string
     showOnlyBookmarked: boolean
 }
 
@@ -44,6 +45,7 @@ export const defaultPropertiesFilterState: PropertiesFilterState = {
     furnishingStatus: "",
     priceMin: "",
     priceMax: "",
+    location: "",
     showOnlyBookmarked: false,
 }
 
@@ -98,6 +100,7 @@ export function PropertiesFilter({
         filters.furnishingStatus !== "" ||
         filters.priceMin !== "" ||
         filters.priceMax !== "" ||
+        filters.location !== "" ||
         (showBookmarkOption && filters.showOnlyBookmarked)
 
     const handleApply = () => {
@@ -184,6 +187,16 @@ export function PropertiesFilter({
                     </div>
 
                     <div>
+                        <Label className="text-sm font-medium">Location</Label>
+                        <Input
+                            placeholder="City or locality"
+                            value={draft.location}
+                            onChange={(e) => setDraft((p) => ({ ...p, location: e.target.value }))}
+                            className="mt-1.5 h-9"
+                        />
+                    </div>
+
+                    <div>
                         <Label className="text-sm font-medium">Price range</Label>
                         <div className="mt-2 flex gap-2">
                             <Input
@@ -244,5 +257,37 @@ export function propertiesFilterToParams(state: PropertiesFilterState): Record<s
     if (state.furnishingStatus) params.furnishingStatus = state.furnishingStatus
     if (state.priceMin) params.priceMin = state.priceMin
     if (state.priceMax) params.priceMax = state.priceMax
+    if (state.location) params.location = state.location
     return params
+}
+
+/** Parse URL search params into PropertiesFilterState */
+export function paramsToPropertiesFilterState(
+    searchParams: URLSearchParams,
+    overrides?: Partial<PropertiesFilterState>
+): PropertiesFilterState {
+    const state = { ...defaultPropertiesFilterState }
+    const category = searchParams.get("category")?.trim()
+    const propertyType = searchParams.get("propertyType")?.trim()
+    const furnishingStatus = searchParams.get("furnishingStatus")?.trim()
+    const priceMin = searchParams.get("priceMin")?.trim() ?? ""
+    const priceMax = searchParams.get("priceMax")?.trim() ?? ""
+    const location = searchParams.get("location")?.trim() ?? ""
+    if (category && ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"].includes(category)) {
+        state.category = category as CategoryFilter
+    }
+    if (propertyType && ["FLAT", "DUPLEX", "PLOT", "FARMLAND"].includes(propertyType)) {
+        state.propertyType = propertyType as PropertyTypeFilter
+    }
+    if (
+        furnishingStatus &&
+        ["FullyFurnished", "SemiFurnished", "Unfurnished", "FencedWired", "FertileLand", "OpenLand", "Cultivated"].includes(furnishingStatus)
+    ) {
+        state.furnishingStatus = furnishingStatus as FurnishingFilter
+    }
+    if (priceMin) state.priceMin = priceMin
+    if (priceMax) state.priceMax = priceMax
+    if (location) state.location = location
+    if (overrides) Object.assign(state, overrides)
+    return state
 }

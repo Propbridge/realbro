@@ -8,6 +8,45 @@ import {
 } from "@/components/ui/dialog"
 import Link from "next/link"
 import { type RequirementBoardTableInterface } from "./requirementColumns"
+import { Button } from "../ui/button"
+import { Search } from "lucide-react"
+
+const PROPERTY_TYPE_MAP: Record<string, string> = {
+    flat: "FLAT",
+    apartment: "FLAT",
+    villa: "DUPLEX",
+    house: "DUPLEX",
+    duplex: "DUPLEX",
+    plot: "PLOT",
+    land: "PLOT",
+    farm: "FARMLAND",
+    farmhouse: "FARMLAND",
+}
+
+function mapRequirementPropertyType(value: string | undefined): string | null {
+    if (!value?.trim()) return null
+    const lower = value.trim().toLowerCase()
+    if (["FLAT", "DUPLEX", "PLOT", "FARMLAND"].includes(value.trim().toUpperCase())) {
+        return value.trim().toUpperCase()
+    }
+    return PROPERTY_TYPE_MAP[lower] ?? null
+}
+
+function requirementToSuggestParams(requirement: RequirementBoardTableInterface): URLSearchParams {
+    const params = new URLSearchParams()
+    if (requirement.preferredLocation?.trim()) {
+        params.set("location", requirement.preferredLocation.trim())
+    }
+    if (requirement.budgetMin != null && requirement.budgetMin > 0) {
+        params.set("priceMin", String(requirement.budgetMin))
+    }
+    if (requirement.budgetMax != null && requirement.budgetMax > 0) {
+        params.set("priceMax", String(requirement.budgetMax))
+    }
+    const propType = mapRequirementPropertyType(requirement.propertyType)
+    if (propType) params.set("propertyType", propType)
+    return params
+}
 
 interface RequirementDetailsDialogProps {
     requirement: RequirementBoardTableInterface | null
@@ -78,6 +117,16 @@ export function RequirementDetailsDialog({
                         <span className="font-medium text-muted-foreground">Created</span>
                         <span>{requirement.createdAt}</span>
                     </div>
+                    <Link
+                        href={`/property/all-listings?${requirementToSuggestParams(requirement).toString()}`}
+                        prefetch={false}
+                        className="flex w-full mt-8"
+                    >
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                            <Search className="size-4" />
+                            Suggest Properties
+                        </Button>
+                    </Link>
                 </div>
                 {(onFulfill || onClose) &&
                     (requirement.status === "Active" || requirement.status === "ACTIVE") && (

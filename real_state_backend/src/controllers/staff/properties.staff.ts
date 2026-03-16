@@ -665,6 +665,7 @@ function buildPropertyWhereFromQuery(query: Record<string, unknown>) {
     const furnishingStatus = String(query.furnishingStatus ?? "").trim();
     const priceMin = Number(query.priceMin);
     const priceMax = Number(query.priceMax);
+    const location = String(query.location ?? "").trim();
 
     if (category && ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL"].includes(category)) {
         where.category = category;
@@ -688,6 +689,24 @@ function buildPropertyWhereFromQuery(query: Record<string, unknown>) {
         (where as { listingPrice?: object }).listingPrice = typeof lp === "object" && lp && "gte" in lp
             ? { ...lp, lte: priceMax }
             : { lte: priceMax };
+    }
+    if (location) {
+        // Split location by comma (e.g. "Sector 22, Chandigarh" -> ["Sector 22", "Chandigarh"])
+        // and match if any part matches city or locality for better results
+        const parts = location
+            .split(",")
+            .map((p) => p.trim())
+            .filter((p) => p.length >= 2);
+        const searchTerms = parts.length > 0 ? parts : [location];
+        const orConditions: object[] = [];
+        for (const term of searchTerms) {
+            orConditions.push(
+                { city: { contains: term, mode: "insensitive" as const } },
+                { locality: { contains: term, mode: "insensitive" as const } },
+                { subLocality: { contains: term, mode: "insensitive" as const } }
+            );
+        }
+        (where as { OR?: object[] }).OR = orConditions;
     }
     return where;
 }
