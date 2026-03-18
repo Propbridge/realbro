@@ -26,6 +26,8 @@ export async function getProfile(req: Request, res: Response) {
                 referrerId: true,
                 points: true,
                 isEmailVerified: true,
+                blueTick: true,
+                isVerifiedSeller: true,
                 createdAt: true,
                 kyc: {
                     select: {
@@ -164,6 +166,8 @@ export async function updateProfile(req: Request, res: Response) {
                 referrerId: true,
                 points: true,
                 isEmailVerified: true,
+                blueTick: true,
+                isVerifiedSeller: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -278,6 +282,8 @@ export async function verifyPhoneUpdateOtp(req: Request, res: Response) {
                     phone: true,
                     age: true,
                     gender: true,
+                    blueTick: true,
+                    isVerifiedSeller: true,
                     updatedAt: true,
                 },
             });
