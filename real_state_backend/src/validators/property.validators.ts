@@ -300,6 +300,9 @@ export const addDraftPropertySchema = z.object({
     media: z.array(propertyMediaSchema).optional()
 });
 
+// Draft update schema - all fields optional for step-wise draft saves
+export const updateDraftPropertySchema = addDraftPropertySchema.partial();
+
 export const exclusivePropertyStatusEnum = ["ACTIVE", "SOLD_OUT", "ARCHIVED"] as const;
 
 export const createExclusivePropertySchema = z.object({
@@ -686,6 +689,7 @@ export const searchExclusivePropertiesSchema = z.object({
 
 export type addPropertyInput = z.infer<typeof addPropertySchema>;
 export type addDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
+export type updateDraftPropertyInput = z.infer<typeof updateDraftPropertySchema>;
 export type updatePropertyInput = z.infer<typeof updatePropertySchema>;
 export type addMediaInput = z.infer<typeof addMediaSchema>;
 export type filterPropertiesInput = z.infer<typeof filterPropertiesSchema>;

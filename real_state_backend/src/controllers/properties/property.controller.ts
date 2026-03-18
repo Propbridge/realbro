@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma";
 import { Request, Response } from "express";
-import { addMediaInput, addPropertySchema, updatePropertySchema, addDraftPropertySchema, filterPropertiesSchema, searchPropertiesSchema } from "../../validators/property.validators";
+import { addMediaInput, addPropertySchema, updatePropertySchema, addDraftPropertySchema, updateDraftPropertySchema, filterPropertiesSchema, searchPropertiesSchema } from "../../validators/property.validators";
 import z from "zod";
 
 type Params = {
@@ -50,8 +50,8 @@ export async function addDraftProperty(req: Request, res: Response) {
             return res.status(401).json({ message: "Unauthorized User" });
         }
         
-        type AddDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
-        const body = req.body as AddDraftPropertyInput;
+        type UpdateDraftPropertyInput = z.infer<typeof updateDraftPropertySchema>;
+        const body = req.body as UpdateDraftPropertyInput;
         const { media, ...propertyData } = body;
         
         // Create property with DRAFT status
@@ -123,20 +123,21 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
             },
         });
         
-        // Handle media updates if provided
-        if (media && media.length > 0) {
-            // Delete existing media and add new ones
+        // Replace media list only when client sends media (including empty array)
+        if (media !== undefined) {
             await prisma.propertyMedia.deleteMany({
                 where: { propertyId: id }
             });
-            
-            await prisma.propertyMedia.createMany({
-                data: media.map((m, index) => ({
-                    ...m,
-                    propertyId: id,
-                    order: m.order ?? index
-                })),
-            });
+
+            if (media.length > 0) {
+                await prisma.propertyMedia.createMany({
+                    data: media.map((m, index) => ({
+                        ...m,
+                        propertyId: id,
+                        order: m.order ?? index
+                    })),
+                });
+            }
         }
         
         // Fetch updated property with media
