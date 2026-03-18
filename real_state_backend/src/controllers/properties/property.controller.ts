@@ -50,8 +50,8 @@ export async function addDraftProperty(req: Request, res: Response) {
             return res.status(401).json({ message: "Unauthorized User" });
         }
         
-        type UpdateDraftPropertyInput = z.infer<typeof updateDraftPropertySchema>;
-        const body = req.body as UpdateDraftPropertyInput;
+        type AddDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
+        const body = req.body as AddDraftPropertyInput;
         const { media, ...propertyData } = body;
         
         // Create property with DRAFT status
@@ -93,9 +93,9 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
         }
         
         const { id } = req.params;
-        type AddDraftPropertyInput = z.infer<typeof addDraftPropertySchema>;
-        const body = req.body as AddDraftPropertyInput;
-        const { media, ...propertyData } = body;
+        type UpdateDraftPropertyInput = z.infer<typeof updateDraftPropertySchema>;
+        const body = req.body as UpdateDraftPropertyInput;
+        const { media, status, ...propertyData } = body;
         
         // Check if property exists and belongs to user
         const existingProperty = await prisma.property.findFirst({
@@ -103,6 +103,11 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
                 id,
                 userId,
             },
+            include: {
+                media: {
+                    orderBy: { order: "asc" }
+                }
+            }
         });
         
         if (!existingProperty) {
@@ -111,33 +116,61 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
             });
         }
         
-        // Update property and keep status as DRAFT
+        const nextStatus = status ?? "DRAFT";
+
+        // If publishing draft, validate it against full add-property requirements.
+        if (nextStatus === "ACTIVE") {
+            const mediaForValidation = media && media.length > 0
+                ? media
+                : existingProperty.media.map((m) => ({
+                    url: m.url,
+                    key: m.key,
+                    mediaType: m.mediaType,
+                    order: m.order,
+                }));
+
+            const publishValidation = addPropertySchema.safeParse({
+                ...existingProperty,
+                ...propertyData,
+                status: "ACTIVE",
+                media: mediaForValidation,
+            });
+
+            if (!publishValidation.success) {
+                return res.status(400).json({
+                    error: "Validation failed",
+                    message: "Draft cannot be published. Please complete all required property fields.",
+                    details: publishValidation.error.flatten().fieldErrors,
+                });
+            }
+        }
+
+        // Update property details and status
         const property = await prisma.property.update({
             where: { id },
             data: {
                 ...propertyData,
-                status: "DRAFT", // Ensure it stays as DRAFT
+                status: nextStatus,
             },
             include: {
                 media: true
             },
         });
         
-        // Replace media list only when client sends media (including empty array)
-        if (media !== undefined) {
+        // Replace media only when non-empty media array is provided.
+        // Empty/omitted media payload should not clear existing draft media.
+        if (media && media.length > 0) {
             await prisma.propertyMedia.deleteMany({
                 where: { propertyId: id }
             });
 
-            if (media.length > 0) {
-                await prisma.propertyMedia.createMany({
-                    data: media.map((m, index) => ({
-                        ...m,
-                        propertyId: id,
-                        order: m.order ?? index
-                    })),
-                });
-            }
+            await prisma.propertyMedia.createMany({
+                data: media.map((m, index) => ({
+                    ...m,
+                    propertyId: id,
+                    order: m.order ?? index
+                })),
+            });
         }
         
         // Fetch updated property with media
@@ -149,7 +182,9 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
         return res.status(200).json({
             success: true,
             data: updatedProperty,
-            message: "Draft property updated successfully"
+            message: nextStatus === "ACTIVE"
+                ? "Draft property published successfully"
+                : "Draft property updated successfully"
         });
     } catch (error) {
         console.error("Update draft property error", error);

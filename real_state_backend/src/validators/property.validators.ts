@@ -301,7 +301,9 @@ export const addDraftPropertySchema = z.object({
 });
 
 // Draft update schema - all fields optional for step-wise draft saves
-export const updateDraftPropertySchema = addDraftPropertySchema.partial();
+export const updateDraftPropertySchema = addDraftPropertySchema.partial().extend({
+    status: z.enum(["DRAFT", "ACTIVE"]).optional()
+});
 
 export const exclusivePropertyStatusEnum = ["ACTIVE", "SOLD_OUT", "ARCHIVED"] as const;
 
