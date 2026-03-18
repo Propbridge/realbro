@@ -158,11 +158,39 @@ export async function updateDraftProperty(req: Request<Params>, res: Response) {
 
 export async function deleteProperty(req: Request<Params>, res: Response) {
     try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
         const { id } = req.params;
+        const property = await prisma.property.findFirst({
+            where: {
+                id,
+                userId,
+            },
+            select: {
+                id: true,
+                status: true,
+                exclusiveProperty: { select: { id: true } },
+            },
+        });
+
+        if (!property) {
+            return res.status(404).json({
+                message: "Property not found or not owned by user",
+            });
+        }
+
+        if (property.exclusiveProperty) {
+            return res.status(409).json({
+                message: "Cannot delete property: it is linked to an exclusive listing.",
+            });
+        }
+
         await prisma.property.delete({
             where: {
                 id,
-                userId: req.user?.id,
             },
         });
         return res.status(200).json({
@@ -175,7 +203,12 @@ export async function deleteProperty(req: Request<Params>, res: Response) {
             return res.status(404).json({
                 message: "Property not found or not owned by user",
             });
-        };
+        }
+        if (error.code === "P2003") {
+            return res.status(409).json({
+                message: "Cannot delete property due to related records. Remove dependent records first.",
+            });
+        }
         return res.status(500).json({ message: "Interval server error" });
     }
 }
