@@ -8,12 +8,67 @@ import { createOtp, generateOtpCode, sendOtpEmail, verifyOtp } from "../../servi
 
 const SIGNUP_OTP_EXPIRY_MINUTES = 5;
 
+function capitalizeFirstLetter(str: string): string {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+async function createUserFromPendingSignup(pendingSignup: any) {
+    const userReferralCode = generateReferralCode(pendingSignup.firstName);
+    const user = await prisma.user.create({
+        data: {
+            firstName: pendingSignup.firstName,
+            lastName: pendingSignup.lastName,
+            email: pendingSignup.email,
+            phone: pendingSignup.phone,
+            password: pendingSignup.passwordHash,
+            age: pendingSignup.age,
+            gender: pendingSignup.gender,
+            avatar: pendingSignup.avatar,
+            avatarKey: pendingSignup.avatarKey,
+            referralCode: userReferralCode,
+            referrerId: pendingSignup.referrerDbUserId,
+            isEmailVerified: true,
+            kyc: {
+                create: [
+                    {
+                        type: "AADHARCARD",
+                        docNo: pendingSignup.aadharNo,
+                        imageUrl: pendingSignup.kycAadharImageUrl,
+                        imageKey: pendingSignup.kycAadharImageKey,
+                        status: "PENDING",
+                    },
+                    {
+                        type: "PANCARD",
+                        docNo: pendingSignup.panNo,
+                        imageUrl: pendingSignup.kycPanImageUrl,
+                        imageKey: pendingSignup.kycPanImageKey,
+                        status: "PENDING",
+                    }
+                ]
+            }
+        }
+    });
+
+    await (prisma as any).pendingSignup.delete({
+        where: { email: pendingSignup.email }
+    });
+
+    const accessToken = signAccessToken({ id: user.id, role: "user" });
+    const refreshToken = signRefreshToken({ id: user.id, role: "user" });
+    await prisma.refreshToken.create({
+        data: {
+            token: refreshToken,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        }
+    });
+
+    return { user, accessToken, refreshToken };
+}
+
 //check status codes at last
 export async function signup(req: Request, res: Response) {
-    function capitalizeFirstLetter(str: string): string {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
     try {
         const {
             firstName, lastName, email, phone, password, age, gender, avatar, avatarKey, referrerId, otpCode,
@@ -116,7 +171,7 @@ export async function signup(req: Request, res: Response) {
             });
         }
 
-        // Step 2: verify OTP from pending signup and then create account.
+        // Step 2 (optional): verify OTP in signup itself and create account.
         if (!pendingSignup || pendingSignup.phone !== phone) {
             return res.status(400).json({
                 error: "Signup session expired or mismatched. Please start signup again.",
@@ -124,6 +179,7 @@ export async function signup(req: Request, res: Response) {
         }
 
         if (pendingSignup.otpExpiresAt < new Date()) {
+            await (prisma as any).pendingSignup.delete({ where: { email } });
             return res.status(400).json({
                 error: "OTP expired. Please signup again to receive a new OTP.",
             });
@@ -135,55 +191,7 @@ export async function signup(req: Request, res: Response) {
             });
         }
 
-        let userReferralCode = generateReferralCode(pendingSignup.firstName);
-        const user = await prisma.user.create({
-            data: {
-                firstName: pendingSignup.firstName,
-                lastName: pendingSignup.lastName,
-                email: pendingSignup.email,
-                phone: pendingSignup.phone,
-                password: pendingSignup.passwordHash,
-                age: pendingSignup.age,
-                gender: pendingSignup.gender,
-                avatar: pendingSignup.avatar,
-                avatarKey: pendingSignup.avatarKey,
-                referralCode: userReferralCode,
-                referrerId: pendingSignup.referrerDbUserId,
-                isEmailVerified: true,
-                kyc: {
-                    create: [
-                        {
-                            type: "AADHARCARD",
-                            docNo: pendingSignup.aadharNo,
-                            imageUrl: pendingSignup.kycAadharImageUrl,
-                            imageKey: pendingSignup.kycAadharImageKey,
-                            status: "PENDING",
-                        },
-                        {
-                            type: "PANCARD",
-                            docNo: pendingSignup.panNo,
-                            imageUrl: pendingSignup.kycPanImageUrl,
-                            imageKey: pendingSignup.kycPanImageKey,
-                            status: "PENDING",
-                        }
-                    ]
-                }
-            }
-        });
-
-        await (prisma as any).pendingSignup.delete({
-            where: { email: pendingSignup.email }
-        });
-
-        const accessToken = signAccessToken({ id: user.id, role: "user" });
-        const refreshToken = signRefreshToken({ id: user.id, role: "user" });
-        await prisma.refreshToken.create({
-            data: {
-                token: refreshToken,
-                userId: user.id,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            }
-        });
+        const { user, accessToken, refreshToken } = await createUserFromPendingSignup(pendingSignup);
 
         return res.status(201).json({
             message: "Signup completed successfully",
@@ -358,15 +366,30 @@ export async function sendOtp(req: Request, res: Response) {
         if (!email) {
             return res.status(400).json({ message: "Please enter a valid email" });
         }
-        const user = await prisma.user.findUnique({
-            where: { email }
-        })
-        if (!user) {
-            return res.status(401).json({ error: "No user found with this email" });
+
+        const pendingSignup = await (prisma as any).pendingSignup.findUnique({
+            where: { email },
+        });
+
+        if (!pendingSignup) {
+            return res.status(400).json({
+                error: "Signup session not found. Please start signup again.",
+            });
         }
-        const createEmailOtp = await createOtp(user.id, "EMAIL");
-        await sendOtpEmail(email, createEmailOtp.code);
-        return res.json({ message: "OTP sent successfully" },);
+
+        const code = generateOtpCode();
+        const otpExpiresAt = new Date(Date.now() + SIGNUP_OTP_EXPIRY_MINUTES * 60 * 1000);
+
+        await (prisma as any).pendingSignup.update({
+            where: { email },
+            data: {
+                otpCode: code,
+                otpExpiresAt,
+            },
+        });
+
+        await sendOtpEmail(email, code);
+        return res.status(200).json({ message: "OTP sent successfully" });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Failed to send OTP" });
@@ -382,24 +405,35 @@ export async function verifyOtpEmail(req: Request, res: Response) {
         if (!code) {
             return res.status(400).json({ message: "Please enter otp" });
         }
-        const user = await prisma.user.findUnique({
-            where: { email }
-        })
-        if (!user) {
-            return res.status(401).json({ error: "No user found with this email" });
+
+        const pendingSignup = await (prisma as any).pendingSignup.findUnique({
+            where: { email },
+        });
+
+        if (!pendingSignup) {
+            return res.status(400).json({
+                error: "Signup session not found. Please start signup again.",
+            });
         }
-        const verifyEmailOtp = await verifyOtp(user.id, code, "EMAIL");
-        if (verifyEmailOtp.valid) {
-            await prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    isEmailVerified: true
-                }
-            })
-            return res.status(200).json({ message: verifyEmailOtp.message })
-        } else {
-            return res.status(400).json({ messsage: "Invalid OTP. Please enter correct otp" })
+
+        if (pendingSignup.otpExpiresAt < new Date()) {
+            await (prisma as any).pendingSignup.delete({ where: { email } });
+            return res.status(400).json({
+                error: "OTP expired. Please start signup again.",
+            });
         }
+
+        if (pendingSignup.otpCode !== code) {
+            return res.status(400).json({ error: "Invalid OTP. Please enter correct otp" });
+        }
+
+        const { user, accessToken, refreshToken } = await createUserFromPendingSignup(pendingSignup);
+        return res.status(200).json({
+            message: "Signup completed successfully",
+            accessToken,
+            refreshToken,
+            user,
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Failed to verify OTP" })
