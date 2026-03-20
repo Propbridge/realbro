@@ -15,7 +15,7 @@ function capitalizeFirstLetter(str: string): string {
 
 async function createUserFromPendingSignup(pendingSignup: any) {
     const userReferralCode = generateReferralCode(pendingSignup.firstName);
-    const user = await prisma.user.create({
+    const createdUser = await prisma.user.create({
         data: {
             firstName: pendingSignup.firstName,
             lastName: pendingSignup.lastName,
@@ -49,6 +49,8 @@ async function createUserFromPendingSignup(pendingSignup: any) {
             }
         }
     });
+
+    const { password, ...user } = createdUser;
 
     await (prisma as any).pendingSignup.delete({
         where: { email: pendingSignup.email }
@@ -412,6 +414,40 @@ export async function verifyOtpEmail(req: Request, res: Response) {
         });
 
         if (!pendingSignup) {
+            const existingUser = await prisma.user.findUnique({
+                where: { email },
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                    avatar: true,
+                    avatarKey: true,
+                    age: true,
+                    gender: true,
+                    isBlocked: true,
+                    referralCode: true,
+                    referrerId: true,
+                    points: true,
+                    blockedBy: true,
+                    blockedOn: true,
+                    isEmailVerified: true,
+                    blueTick: true,
+                    isVerifiedSeller: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            });
+
+            if (existingUser?.isEmailVerified) {
+                return res.status(200).json({
+                    message: "OTP already verified. Please continue.",
+                    alreadyVerified: true,
+                    user: existingUser,
+                });
+            }
+
             return res.status(400).json({
                 error: "Signup session not found. Please start signup again.",
             });
