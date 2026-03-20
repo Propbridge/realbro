@@ -305,7 +305,7 @@ export const updateDraftPropertySchema = addDraftPropertySchema.partial().extend
     status: z.enum(["DRAFT", "ACTIVE"]).optional()
 });
 
-export const exclusivePropertyStatusEnum = ["ACTIVE", "SOLD_OUT", "ARCHIVED"] as const;
+export const exclusivePropertyStatusEnum = ["ACTIVE", "SOLD_OUT", "UNLISTED"] as const;
 
 export const createExclusivePropertySchema = z.object({
     fixedRewardGems: z.number().int().min(0, "fixedRewardGems is required and must be non-negative"),

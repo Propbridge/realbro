@@ -354,6 +354,7 @@ model PropertyMedia {
 enum ExclusivePropertyStatus {
   ACTIVE
   SOLD_OUT
+  UNLISTED
 }
 
 model ExclusiveProperty {

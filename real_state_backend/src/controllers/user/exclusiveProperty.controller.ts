@@ -6,7 +6,7 @@ import {
     searchExclusivePropertiesSchema,
 } from "../../validators/property.validators";
 
-const exclusiveStatusValues = ["ACTIVE", "SOLD_OUT", "ARCHIVED"] as const;
+const exclusiveStatusValues = ["ACTIVE", "SOLD_OUT", "UNLISTED"] as const;
 type ExclusiveStatus = (typeof exclusiveStatusValues)[number];
 const prismaClient = prisma as any;
 

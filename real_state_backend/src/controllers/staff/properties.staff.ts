@@ -393,7 +393,7 @@ export async function createExclusiveProperty(req: Request, res: Response) {
             sourcePropertyId: propertyId,
             originalUserId: property.userId,
             fixedRewardGems,
-            status: (bodyOverrides.status ?? "ACTIVE") as "ACTIVE" | "SOLD_OUT" | "ARCHIVED",
+            status: (bodyOverrides.status ?? "ACTIVE") as "ACTIVE" | "SOLD_OUT" | "UNLISTED",
         };
 
         const mediaToCreate =
@@ -917,7 +917,7 @@ export async function updatePropertyStatus(req: Request, res: Response) {
         if (!propertyId || !status) return res.status(400).json({ message: "propertyId and status are required" });
 
         const validPropertyStatuses = ["ACTIVE", "UNLISTED", "SOLDOFFLINE", "SOLDTOREALBRO", "SOLDFROMLISTINGS", "DRAFT", "SOLDEXCLUSIVEPROPERTY"];
-        const validExclusiveStatuses = ["ACTIVE", "SOLD_OUT", "ARCHIVED"];
+        const validExclusiveStatuses = ["ACTIVE", "SOLD_OUT", "UNLISTED"];
 
         const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true, exclusiveProperty: { select: { id: true } } } });
         if (!property) return res.status(404).json({ message: "Property not found" });
@@ -925,7 +925,7 @@ export async function updatePropertyStatus(req: Request, res: Response) {
         if (target === "exclusive" && validExclusiveStatuses.includes(status) && property.exclusiveProperty) {
             await prisma.exclusiveProperty.update({
                 where: { id: property.exclusiveProperty.id },
-                data: { status: status as "ACTIVE" | "SOLD_OUT" | "ARCHIVED" },
+                data: { status: status as "ACTIVE" | "SOLD_OUT" | "UNLISTED" },
             });
             return res.status(200).json({ success: true, message: "Exclusive property status updated" });
         }
