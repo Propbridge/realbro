@@ -2,6 +2,7 @@ import { PropertyRequirementStatus } from "@prisma/client";
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma";
 import { createAndSendUserNotification } from "../../services/notification.service";
+import { requirementFulfilledNotification } from "../../services/Notifications/requirements.notification";
 
 export async function getPropertyRequirements(req: Request, res: Response) {
     try {
@@ -76,22 +77,23 @@ export async function updateRequirementStatus(req: Request, res: Response) {
             data: { status: status as PropertyRequirementStatus },
         });
 
-        try {
-            const isFulfilled = updated.status === "FULFILLED";
-            await createAndSendUserNotification({
-                userId: requirement.userId,
-                type: "GENERIC" as any,
-                title: isFulfilled ? "Requirement fulfilled" : "Requirement closed",
-                description: isFulfilled
-                    ? "Good news! Your property requirement has been fulfilled by our team."
-                    : "Your property requirement has been closed by our team.",
-                data: {
+        if (updated.status === "FULFILLED") {
+            try {
+                const payload = requirementFulfilledNotification({
+                    userId: requirement.userId,
                     requirementId: updated.id,
-                    status: updated.status,
-                },
-            });
-        } catch (notificationError) {
-            console.error("Requirement status notification error:", notificationError);
+                });
+
+                await createAndSendUserNotification({
+                    userId: requirement.userId,
+                    type: payload.type,
+                    title: payload.title,
+                    description: payload.description,
+                    data: payload.data,
+                });
+            } catch (notificationError) {
+                console.error("Requirement status notification error:", notificationError);
+            }
         }
 
         return res.status(200).json({ success: true, data: updated });
