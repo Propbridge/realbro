@@ -146,7 +146,6 @@ export async function acceptAppointment(req: Request, res: Response) {
             const handlerName = [updated.staffHandler?.firstName, updated.staffHandler?.lastName]
                 .filter(Boolean)
                 .join(" ") || "our support team";
-            const contactValue = updated.staffHandler?.phone || updated.staffHandler?.email;
             const contactPhone = "+91-80856-71414 ";
             const contactEmail = "contact@realbro.com";
 
@@ -293,7 +292,6 @@ export async function rejectAppointment(req: Request, res: Response) {
             const handlerName = [updated.staffHandler?.firstName, updated.staffHandler?.lastName]
                 .filter(Boolean)
                 .join(" ") || "our support team";
-            const contactValue = updated.staffHandler?.phone || updated.staffHandler?.email;
             const contactPhone = "+91-80856-71414 ";
             const contactEmail = "contact@realbro.com";
 
@@ -301,8 +299,8 @@ export async function rejectAppointment(req: Request, res: Response) {
             await createAndSendUserNotification({
                 userId: appointment.userId,
                 type: NotificationType.APPOINTMENT_UPDATED,
-                title: "Appointment accepted",
-                description: `Your appointment for "${appointment.property.title}" has been scheduled for ${scheduledAt}. Call us at: ${contactPhone} or email us at: ${contactEmail}.`,
+                title: "Appointment Rejected",
+                description: `Your appointment for "${appointment.property.title}" has been rejected. Contact us at: ${contactPhone} or email us at: ${contactEmail} for query.`,
                 data: {
                     appointmentId,
                     propertyId: appointment.propertyId,
@@ -314,7 +312,7 @@ export async function rejectAppointment(req: Request, res: Response) {
                 }
             });
         } catch (e) {
-            console.error("Appointment accept notification error:", e);
+            console.error("Appointment reject notification error:", e);
         }
 
         return res.status(200).json({ success: true, message: "Appointment rejected", data: updated });
