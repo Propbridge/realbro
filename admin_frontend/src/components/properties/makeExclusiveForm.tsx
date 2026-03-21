@@ -505,7 +505,7 @@ export function MakeExclusiveForm() {
                     {isLoadingExisting && <p className="text-xs text-gray-500">Loading current property values...</p>}
                     {!propertyId && <p className="text-xs text-red-500">Invalid property id in route.</p>}
                     <p className="text-xs text-gray-500">
-                        Media limits: max {MAX_IMAGE_COUNT} photos ({MAX_IMAGE_SIZE_MB}MB each) and {MAX_VIDEO_COUNT} video ({MAX_VIDEO_SIZE_MB}MB). You can change these limits in this file constants.
+                        Media limits: max {MAX_IMAGE_COUNT} photos ({MAX_IMAGE_SIZE_MB}MB each) and {MAX_VIDEO_COUNT} video ({MAX_VIDEO_SIZE_MB}MB).
                     </p>
                 </CardHeader>
 

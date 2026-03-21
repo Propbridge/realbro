@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import JSZip from "jszip"
+import axios from "axios"
 import {
     Dialog,
     DialogContent,
@@ -17,6 +19,10 @@ import { useAuth } from "@/contexts/AuthContext"
 const disabledBtnClass = "opacity-50 cursor-not-allowed grayscale"
 
 interface PropertyActionBarProps {
+    /** Media items to include in download zip */
+    media?: Array<{ url: string; mediaType: string }>
+    /** Property title used in media zip filename */
+    propertyTitle?: string
     /** Property is bought by Realbro (status === SOLDTOREALBRO) */
     isBoughtByRealbro: boolean
     /** Property has exclusive listing */
@@ -40,6 +46,8 @@ interface PropertyActionBarProps {
 }
 
 export function PropertyActionBar({
+    media = [],
+    propertyTitle,
     isBoughtByRealbro,
     isExclusive,
     exclusivePropertyId,
@@ -89,6 +97,7 @@ export function PropertyActionBar({
     const [isDeleting, setIsDeleting] = useState(false)
     const [buyDialogOpen, setBuyDialogOpen] = useState(false)
     const [isSubmittingBuy, setIsSubmittingBuy] = useState(false)
+    const [isDownloadingMedia, setIsDownloadingMedia] = useState(false)
 
     const isMarkingSold = soldToggleLabel === "Mark as Sold"
     const isUnlisting = isListed
@@ -126,6 +135,87 @@ export function PropertyActionBar({
             setBuyDialogOpen(false)
         } finally {
             setIsSubmittingBuy(false)
+        }
+    }
+
+    const normalizeExtension = (mediaType: string, source: string): string => {
+        const imageExt = mediaType === "IMAGE" ? "jpg" : "mp4"
+        try {
+            const parsed = new URL(source, window.location.origin)
+            const name = parsed.pathname.split("/").pop() ?? ""
+            const extension = name.includes(".") ? name.split(".").pop() : ""
+            return extension?.toLowerCase() || imageExt
+        } catch {
+            return imageExt
+        }
+    }
+
+    const toAbsoluteMediaUrl = (source: string): string | null => {
+        try {
+            return new URL(source, window.location.origin).toString()
+        } catch {
+            return null
+        }
+    }
+
+    const sanitizeFileName = (value: string): string => {
+        const cleaned = value
+            .trim()
+            .replace(/[\\/:*?"<>|]/g, "-")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+        return cleaned || "media"
+    }
+
+    const handleDownloadMedia = async () => {
+        if (!media.length) return
+
+        setIsDownloadingMedia(true)
+        try {
+            const zip = new JSZip()
+            const zipBaseName = sanitizeFileName(propertyTitle || propertyId || "media")
+            const mediaFolder = zip.folder(`property-${zipBaseName}`)
+
+            if (!mediaFolder) return
+
+            await Promise.all(
+                media.map(async (item, index) => {
+                    const absoluteUrl = toAbsoluteMediaUrl(item.url)
+                    if (!absoluteUrl) {
+                        throw new Error(`Failed to download media ${index + 1}`)
+                    }
+
+                    const response = await axios.get("/api/media-proxy", {
+                        params: { url: absoluteUrl },
+                        responseType: "blob",
+                    })
+
+                    if (!response.data) {
+                        throw new Error(`Empty media response ${index + 1}`)
+                    }
+
+                    const blob = response.data as Blob
+                    const extension = normalizeExtension(item.mediaType, item.url)
+                    const prefix = item.mediaType === "VIDEO" ? "video" : "image"
+                    const fileName = `${prefix}-${String(index + 1).padStart(2, "0")}.${extension}`
+                    mediaFolder.file(fileName, blob)
+                })
+            )
+
+            const zipBlob = await zip.generateAsync({ type: "blob" })
+            const downloadUrl = URL.createObjectURL(zipBlob)
+            const anchor = document.createElement("a")
+            anchor.href = downloadUrl
+            anchor.download = `property-${zipBaseName}.zip`
+            document.body.appendChild(anchor)
+            anchor.click()
+            anchor.remove()
+            URL.revokeObjectURL(downloadUrl)
+        } catch (error) {
+            console.error("Failed to download property media:", error)
+        } finally {
+            setIsDownloadingMedia(false)
         }
     }
 
@@ -200,6 +290,14 @@ export function PropertyActionBar({
                 >
                     <ShoppingCart className="size-3.5" />
                     Buy Property
+                </Button>
+                <Button
+                    size="sm"
+                    className={`border-2 shadow-none gap-1.5 text-xs ${!media.length || isDownloadingMedia ? disabledBtnClass : ""}`}
+                    onClick={handleDownloadMedia}
+                    disabled={!media.length || isDownloadingMedia}
+                >
+                    {isDownloadingMedia ? "Preparing Zip..." : "Download Media"}
                 </Button>
                 <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
                                 <DialogContent>

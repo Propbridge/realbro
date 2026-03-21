@@ -297,6 +297,8 @@ export default function PropertyPage() {
                     />
                     <PropertyBrokerInfo broker={broker} />
                     <PropertyActionBar
+                        media={mediaItems}
+                        propertyTitle={property.title}
                         isBoughtByRealbro={property.status === "SOLDTOREALBRO"}
                         isExclusive={Boolean(property.exclusiveProperty)}
                         exclusivePropertyId={property.exclusiveProperty?.id}

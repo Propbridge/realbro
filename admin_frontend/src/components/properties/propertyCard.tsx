@@ -386,7 +386,6 @@ export function PropertyCard({
                             Mark as Sold
                         </Button>
                     ) : null}
-                    <Button>Download Media</Button>
                 </div>
             </div>
         </Card>
