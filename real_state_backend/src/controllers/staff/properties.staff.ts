@@ -3,8 +3,9 @@ import { prisma } from "../../config/prisma";
 import z from "zod";
 import { NotificationType } from "@prisma/client";
 import { createExclusivePropertySchema, updateExclusivePropertySchema } from "../../validators/property.validators";
-import { broadcastNotificationToAllUsers } from "../../services/notification.service";
+import { broadcastNotificationToAllUsers, createAndSendUserNotification } from "../../services/notification.service";
 import { normalizeCategory } from "../../utils/propertyTaxonomy";
+import { buildAcquisitionApprovalNotification } from "../../services/Notifications/properties.notification";
 
 async function resolveStaffActorId(staffId: string, role: string): Promise<string | null> {
     if (role !== "SUPER_ADMIN") {
@@ -86,7 +87,7 @@ export async function addBookMark(req: Request, res: Response) {
 
     } catch (error) {
         console.error("Add bookmark error:", error);
-        return res.status(500).json({ message: "Internal server error",error });
+        return res.status(500).json({ message: "Internal server error", error });
     }
 };
 
@@ -189,11 +190,25 @@ export async function acquisitionRequest(req: Request, res: Response) {
                         status: "APPROVED",
                     },
                 });
-                await prisma.property.update({
+                const updatedProperty = await prisma.property.update({
                     where: { id: propertyId },
                     data: {
                         status: "SOLDTOREALBRO",
                     },
+                });
+                const payload = buildAcquisitionApprovalNotification({
+                    propertyId: updatedProperty.id,
+                    propertyTitle: updatedProperty.title,
+                });
+
+                createAndSendUserNotification({
+                    userId: updatedProperty.userId,
+                    type: payload.type,
+                    title: payload.title,
+                    description: payload.description,
+                    data: payload.data,
+                }).catch((notificationError) => {
+                    console.error("Acquisition approval notification error:", notificationError);
                 });
                 return res.status(200).json({ message: "Acquisition Approved successfully", data: acquisitionRequest });
             }
@@ -289,9 +304,25 @@ export async function acquisitionRequestApproval(req: Request, res: Response) {
             data: { status: decision },
         });
         if (decision === "APPROVED") {
-            await prisma.property.update({
+            const updatedProperty = await prisma.property.update({
                 where: { id: propertyId as string },
                 data: { status: "SOLDTOREALBRO" },
+                select: { id: true, title: true, userId: true },
+            });
+
+            const payload = buildAcquisitionApprovalNotification({
+                propertyId: updatedProperty.id,
+                propertyTitle: updatedProperty.title,
+            });
+
+            createAndSendUserNotification({
+                userId: updatedProperty.userId,
+                type: payload.type,
+                title: payload.title,
+                description: payload.description,
+                data: payload.data,
+            }).catch((notificationError) => {
+                console.error("Acquisition approval notification error:", notificationError);
             });
         }
         if (decision === "REJECTED") {
@@ -400,11 +431,11 @@ export async function createExclusiveProperty(req: Request, res: Response) {
             bodyMedia !== undefined
                 ? bodyMedia
                 : property.media.map((m, index) => ({
-                      url: m.url,
-                      key: m.key,
-                      mediaType: m.mediaType,
-                      order: m.order ?? index,
-                  }));
+                    url: m.url,
+                    key: m.key,
+                    mediaType: m.mediaType,
+                    order: m.order ?? index,
+                }));
 
         const exclusiveProperty = await prisma.exclusiveProperty.create({
             data: {
@@ -412,15 +443,15 @@ export async function createExclusiveProperty(req: Request, res: Response) {
                 media:
                     mediaToCreate.length > 0
                         ? {
-                              createMany: {
-                                  data: mediaToCreate.map((m, index) => ({
-                                      url: m.url,
-                                      key: m.key,
-                                      mediaType: m.mediaType,
-                                      order: m.order ?? index,
-                                  })),
-                              },
-                          }
+                            createMany: {
+                                data: mediaToCreate.map((m, index) => ({
+                                    url: m.url,
+                                    key: m.key,
+                                    mediaType: m.mediaType,
+                                    order: m.order ?? index,
+                                })),
+                            },
+                        }
                         : undefined,
             },
             select: {
@@ -461,7 +492,7 @@ export async function createExclusiveProperty(req: Request, res: Response) {
         });
     } catch (error) {
         console.error("Create exclusive property error:", error);
-        return res.status(500).json({ message: "Internal server error",error });
+        return res.status(500).json({ message: "Internal server error", error });
     }
 }
 
@@ -505,17 +536,17 @@ export async function updateExclusiveProperty(req: Request, res: Response) {
                 ...updateData,
                 ...(bodyMedia !== undefined && bodyMedia.length > 0
                     ? {
-                          media: {
-                              createMany: {
-                                  data: bodyMedia.map((m, index) => ({
-                                      url: m.url,
-                                      key: m.key,
-                                      mediaType: m.mediaType,
-                                      order: m.order ?? index,
-                                  })),
-                              },
-                          },
-                      }
+                        media: {
+                            createMany: {
+                                data: bodyMedia.map((m, index) => ({
+                                    url: m.url,
+                                    key: m.key,
+                                    mediaType: m.mediaType,
+                                    order: m.order ?? index,
+                                })),
+                            },
+                        },
+                    }
                     : {}),
             },
             select: {

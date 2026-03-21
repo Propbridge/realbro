@@ -146,7 +146,7 @@ export async function acceptAppointment(req: Request, res: Response) {
             const handlerName = [updated.staffHandler?.firstName, updated.staffHandler?.lastName]
                 .filter(Boolean)
                 .join(" ") || "our support team";
-            const contactPhone = "+91-80856-71414 ";
+            const contactPhone = "+91-80856-71414";
             const contactEmail = "contact@realbro.com";
 
 
@@ -314,7 +314,6 @@ export async function rejectAppointment(req: Request, res: Response) {
         } catch (e) {
             console.error("Appointment reject notification error:", e);
         }
-
         return res.status(200).json({ success: true, message: "Appointment rejected", data: updated });
     } catch (error) {
         console.error("Reject appointment error:", error);
