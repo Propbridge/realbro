@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, Loader2, X } from "lucide-react";
 
 type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "UNLISTED";
@@ -205,6 +205,7 @@ export function MakeExclusiveForm() {
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<MediaEntry | null>(null);
     const [deleteMediaIndex, setDeleteMediaIndex] = useState<number | null>(null);
+    const [makeExclusiveConfirmOpen, setMakeExclusiveConfirmOpen] = useState(false);
 
     const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -609,15 +610,6 @@ export function MakeExclusiveForm() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-1.5">
-                            <FieldLabel>Notes</FieldLabel>
-                            <Input
-                                value={form.notes}
-                                onChange={(e) => setField("notes", e.target.value)}
-                                className="h-10 border-2 bg-white"
-                                placeholder="Optional notes for this conversion"
-                            />
-                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -905,12 +897,45 @@ export function MakeExclusiveForm() {
                         <X className="size-4" />
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={() => setMakeExclusiveConfirmOpen(true)} disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700">
                         {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
                         {isSubmitting ? "Creating..." : "Make Exclusive"}
                     </Button>
                 </CardFooter>
             </Card>
+
+            <Dialog open={makeExclusiveConfirmOpen} onOpenChange={setMakeExclusiveConfirmOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Make Exclusive</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to make this property exclusive?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setMakeExclusiveConfirmOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => {
+                                setMakeExclusiveConfirmOpen(false);
+                                void handleSubmit();
+                            }}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+                            {isSubmitting ? "Creating..." : "Yes, Make Exclusive"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

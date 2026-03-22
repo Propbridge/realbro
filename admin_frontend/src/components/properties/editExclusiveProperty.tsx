@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, Loader2, X } from "lucide-react";
 
 type ExclusiveStatus = "ACTIVE" | "SOLD_OUT" | "UNLISTED";
@@ -190,6 +190,8 @@ export function EditExclusiveProperty() {
     const [isLoadingExisting, setIsLoadingExisting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [editConfirmOpen, setEditConfirmOpen] = useState(false);
+
     const [switchTouched, setSwitchTouched] = useState({
         allInclusivePrice: false,
         negotiablePrice: false,
@@ -483,9 +485,9 @@ export function EditExclusiveProperty() {
         } catch (err: unknown) {
             const msg =
                 typeof err === "object" &&
-                err !== null &&
-                "response" in err &&
-                typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+                    err !== null &&
+                    "response" in err &&
+                    typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
                     ? (err as { response?: { data?: { message?: string } } }).response!.data!.message!
                     : "Failed to update exclusive property";
             setError(msg);
@@ -608,15 +610,6 @@ export function EditExclusiveProperty() {
                                     <SelectItem value="UNLISTED">UNLISTED</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <FieldLabel>Notes</FieldLabel>
-                            <Input
-                                value={form.notes}
-                                onChange={(e) => setField("notes", e.target.value)}
-                                className="h-10 border-2 bg-white"
-                                placeholder="Optional notes for this conversion"
-                            />
                         </div>
                     </div>
 
@@ -905,12 +898,44 @@ export function EditExclusiveProperty() {
                         <X className="size-4" />
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={() => setEditConfirmOpen(true)} disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700">
                         {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
-                        {isSubmitting ? "Updating..." : "Update Exclusive Property"}
+                        {isSubmitting ? "Editing..." : "Edit Property"}
                     </Button>
                 </CardFooter>
             </Card>
+                        <Dialog open={editConfirmOpen} onOpenChange={setEditConfirmOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Edit Property</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to edit this property ?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setEditConfirmOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => {
+                                setEditConfirmOpen(false);
+                                void handleSubmit();
+                            }}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+                            {isSubmitting ? "Editing..." : "Yes, Update It"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
