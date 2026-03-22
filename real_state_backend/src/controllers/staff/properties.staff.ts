@@ -183,100 +183,64 @@ export async function acquisitionRequest(req: Request, res: Response) {
             })
             return res.status(200).json({ message: "Acquisition requested successfully" });
         } else if (role === "SUPER_ADMIN") {
-            if (existingRequest) {
-                const acquisitionRequest = await prisma.propertyAcquisitionRequest.update({
+            const actorStaffId = await resolveStaffActorId(staffId, role);
+            if (!actorStaffId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+
+            const result = await prisma.$transaction(async (tx) => {
+                const acquisitionRequest = await tx.propertyAcquisitionRequest.upsert({
                     where: { propertyId },
-                    data: {
+                    update: {
+                        status: "APPROVED",
+                        requestedByStaffId: actorStaffId,
+                    },
+                    create: {
+                        propertyId,
+                        requestedByStaffId: actorStaffId,
                         status: "APPROVED",
                     },
                 });
-                const updatedProperty = await prisma.property.update({
+
+                const updatedProperty = await tx.property.update({
                     where: { id: propertyId },
-                    data: {
-                        status: "SOLDTOREALBRO",
-                    },
-                });
-                const payload = buildAcquisitionApprovalNotification({
-                    propertyId: updatedProperty.id,
-                    propertyTitle: updatedProperty.title,
+                    data: { status: "SOLDTOREALBRO" },
+                    select: { id: true, title: true, userId: true, status: true },
                 });
 
-                createAndSendUserNotification({
-                    userId: updatedProperty.userId,
-                    type: payload.type,
-                    title: payload.title,
-                    description: payload.description,
-                    data: payload.data,
-                }).catch((notificationError) => {
-                    console.error("Acquisition approval notification error:", notificationError);
-                });
-                return res.status(200).json({ message: "Acquisition Approved successfully", data: acquisitionRequest });
-            }
-
-            const superAdmin = await prisma.superAdmin.findUnique({
-                where: { id: staffId },
-                select: {
-                    email: true,
-                    firstName: true,
-                    lastName: true,
-                    isActive: true,
-                },
+                return { acquisitionRequest, updatedProperty };
             });
 
-            let requesterStaff = await prisma.staff.findFirst({
-                where: superAdmin?.email
-                    ? {
-                        OR: [
-                            { id: staffId },
-                            { email: superAdmin.email, role: "SUPER_ADMIN" },
-                        ],
-                    }
-                    : { id: staffId },
-                select: { id: true },
-            });
-
-            if (!requesterStaff) {
-                requesterStaff = await prisma.staff.findFirst({
-                    where: { role: "SUPER_ADMIN", isActive: true },
-                    select: { id: true },
-                });
-            }
-
-            if (!requesterStaff) {
-                if (!superAdmin) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-
-                requesterStaff = await prisma.staff.upsert({
-                    where: { email: superAdmin.email },
-                    update: {
-                        role: "SUPER_ADMIN",
-                        isActive: superAdmin.isActive,
-                    },
-                    create: {
-                        email: superAdmin.email,
-                        firstName: superAdmin.firstName ?? "Super",
-                        lastName: superAdmin.lastName ?? "Admin",
-                        role: "SUPER_ADMIN",
-                        isActive: superAdmin.isActive,
-                    },
-                    select: { id: true },
-                });
-            }
-
-            const acquisitionRequest = await prisma.propertyAcquisitionRequest.create({
+            res.status(200).json({
+                message: "Acquisition approved and sold to Real Bro successfully",
                 data: {
-                    propertyId,
-                    requestedByStaffId: requesterStaff.id,
-                    status: "APPROVED",
+                    acquisitionRequest: result.acquisitionRequest,
+                    property: result.updatedProperty,
                 },
             });
-            return res.status(200).json({ message: "Acquisition Approved successfully", data: acquisitionRequest });
-        }
-    } catch (error) {
-        console.error("Acquisition request error:", error);
-        return res.status(500).json({ message: "Internal server error" });
+
+            const payload = buildAcquisitionApprovalNotification({
+                propertyId: result.updatedProperty.id,
+                propertyTitle: result.updatedProperty.title,
+            });
+
+            createAndSendUserNotification({
+                userId: result.updatedProperty.userId,
+                type: payload.type,
+                title: payload.title,
+                description: payload.description,
+                data: payload.data,
+            }).catch((notificationError) => {
+                console.error("Acquisition approval notification error:", notificationError);
+            });
+
+            return;
+        } return;
     }
+    catch (error) {
+    console.error("Acquisition request error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+}
 };
 
 export async function acquisitionRequestApproval(req: Request, res: Response) {

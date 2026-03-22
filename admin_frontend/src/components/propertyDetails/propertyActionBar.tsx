@@ -138,6 +138,11 @@ export function PropertyActionBar({
         }
     }
 
+    const handleOpenBuyDialog = () => {
+        if (!buyEnabled || !onBuy) return
+        setBuyDialogOpen(true)
+    }
+
     const normalizeExtension = (mediaType: string, source: string): string => {
         const imageExt = mediaType === "IMAGE" ? "jpg" : "mp4"
         try {
@@ -283,14 +288,37 @@ export function PropertyActionBar({
                 </Button>
 
                 <Button
+                    type="button"
                     size="sm"
-                    className={`gap-1.5 text-xs ${buyEnabled ? "bg-blue-600 hover:bg-blue-700" : `bg-gray-400 ${disabledBtnClass}`}`}
-                    onClick={() => setBuyDialogOpen(true)}
+                    className={`gap-1.5 text-xs touch-manipulation ${buyEnabled ? "bg-blue-600 md:hover:bg-blue-700" : `bg-gray-400 ${disabledBtnClass}`}`}
+                    onClick={handleOpenBuyDialog}
                     disabled={!buyEnabled || !onBuy}
                 >
                     <ShoppingCart className="size-3.5" />
                     Buy Property
                 </Button>
+                <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirm Action</DialogTitle>
+                            <DialogDescription>
+                                {buyConfirmationText}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setBuyDialogOpen(false)}
+                                disabled={isSubmittingBuy}
+                            >
+                                Cancel
+                            </Button>
+                            <Button onClick={handleConfirmBuy} disabled={isSubmittingBuy || !onBuy}>
+                                {isSubmittingBuy ? "Processing..." : "Confirm"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
                 <Button
                     className={`border-2 shadow-none gap-1.5 text-xs bg-blue-600 ${!media.length || isDownloadingMedia ? disabledBtnClass : ""}`}
                     onClick={handleDownloadMedia}
@@ -298,28 +326,6 @@ export function PropertyActionBar({
                 >
                     {isDownloadingMedia ? "Preparing Zip..." : "Download Media"}
                 </Button>
-                <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Confirm Action</DialogTitle>
-                                        <DialogDescription>
-                                            {buyConfirmationText}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setBuyDialogOpen(false)}
-                                            disabled={isSubmittingBuy}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button onClick={handleConfirmBuy} disabled={isSubmittingBuy || !onBuy}>
-                                            {isSubmittingBuy ? "Processing..." : "Confirm"}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
 
                 <Button
                     size="sm"
