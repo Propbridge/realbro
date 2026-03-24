@@ -7,6 +7,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -201,7 +202,7 @@ export function MyChart() {
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
           <Button
             size="sm"
-            className= "bg-blue-600 text-white hover:bg-blue-50 font-medium"
+            className= "bg-blue-600 text-white hover:bg-blue-700 font-medium"
             onClick={() => setShowCustomPanel((prev) => !prev)}
           >
             Select Date Range
@@ -260,27 +261,42 @@ export function MyChart() {
         </div>
       )}
 
-      <ChartContainer config={chartConfig} className="h-65 w-full">
-        <BarChart data={safeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="window"
-            tickLine={false}
-            axisLine={false}
-            interval="preserveStartEnd"
-            tick={{ fontSize: 11 }}
-          />
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar
-            dataKey="activeUsers"
-            name="activeUsers"
-            fill="var(--color-activeUsers)"
-            radius={[6, 6, 0, 0]}
-            isAnimationActive={!isLoading}
-          />
-        </BarChart>
-      </ChartContainer>
+      <div className="relative">
+        <ChartContainer config={chartConfig} className="h-65 w-full">
+          <BarChart data={safeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="window"
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar
+              dataKey="activeUsers"
+              name="activeUsers"
+              fill="var(--color-activeUsers)"
+              radius={[6, 6, 0, 0]}
+              isAnimationActive={!isLoading}
+            />
+          </BarChart>
+        </ChartContainer>
+
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/70 backdrop-blur-[1px]">
+            <div className="flex h-52 w-full max-w-2xl items-end justify-center gap-3 px-6">
+              <Skeleton className="w-8 h-16 rounded-t-md bg-blue-200/70" />
+              <Skeleton className="w-8 h-28 rounded-t-md bg-blue-200/70" />
+              <Skeleton className="w-8 h-20 rounded-t-md bg-blue-200/70" />
+              <Skeleton className="w-8 h-36 rounded-t-md bg-blue-200/70" />
+              <Skeleton className="w-8 h-24 rounded-t-md bg-blue-200/70" />
+              <Skeleton className="w-8 h-40 rounded-t-md bg-blue-200/70" />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
