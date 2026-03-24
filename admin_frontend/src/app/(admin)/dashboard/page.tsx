@@ -1,6 +1,8 @@
 import { AnalyticsCards } from "@/components/dashboard/analyticsCards";
 import { MyChart } from "@/components/dashboard/userAnalytics";
 import { InventoryVelocityChart } from "@/components/dashboard/inventoryVelocity";
+import { PropertyCategoryChart } from "@/components/dashboard/propertyCategory";
+import { InventoryDistributionChart } from "@/components/dashboard/inventoryDistribution";
 
 export default function Dashboard() {
     return (
@@ -8,12 +10,11 @@ export default function Dashboard() {
             <div>
                 <AnalyticsCards />
             </div>
-            <div></div>
-            <div>
+            <div className="flex flex-col gap-3">
                 <MyChart />
-            </div>
-            <div>
                 <InventoryVelocityChart />
+                <PropertyCategoryChart/>
+                <InventoryDistributionChart />
             </div>
         </div>
     );
