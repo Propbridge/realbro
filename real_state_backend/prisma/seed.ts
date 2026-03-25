@@ -1,30 +1,37 @@
-import { prisma } from '../src/config/prisma.js';
+import 'dotenv/config';
+import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
 import { generateReferralCode } from '../src/utils/generateReferralCode.js';
+
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // create super admin
+  // create super admin only when both env vars are provided
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD as string;
-  if (!superAdminEmail || !superAdminPassword) {
-    throw new Error("SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD are required");
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
+  let superAdminEmailSeeded: string | null = null;
+
+  if (superAdminEmail && superAdminPassword) {
+    const superAdmin = await prisma.superAdmin.upsert({
+      where: { email: superAdminEmail },
+      update: {
+        isActive: true,
+      },
+      create: {
+        firstName: "Super",
+        lastName: "Admin",
+        email: superAdminEmail,
+        passwordHash: await hashPassword(superAdminPassword),
+        isActive: true,
+        isTwoFactorEnabled: false,
+      },
+    });
+    superAdminEmailSeeded = superAdmin.email;
+  } else {
+    console.log('ℹ️ SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD not provided. Skipping super admin seed.');
   }
-  const superAdmin = await prisma.superAdmin.upsert({
-    where: { email: superAdminEmail },
-    update: {
-      isActive: true,
-    },
-    create: {
-      firstName: "Super",
-      lastName: "Admin",
-      email: superAdminEmail,
-      passwordHash: await hashPassword(superAdminPassword),
-      isActive: true,
-      isTwoFactorEnabled: false,
-    },
-  });
 
   const adminPasswordHash = await hashPassword('Admin@123');
   const buyerPasswordHash = await hashPassword('Buyer@123');
@@ -207,7 +214,9 @@ async function main() {
   console.log('✅ Seed user #2 ready:', secondUser.email, '| Referral:', secondUser.referralCode);
   console.log('🔗 User #2 referrerId:', secondUser.referrerId);
   console.log('⚠️  Remember to change seeded passwords after first login!');
-  console.log("✅ SuperAdmin ready:", superAdmin.email);
+  if (superAdminEmailSeeded) {
+    console.log("✅ SuperAdmin ready:", superAdminEmailSeeded);
+  }
 }
 
 main()
