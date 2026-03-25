@@ -1,10 +1,46 @@
 import { prisma } from "../config/prisma";
 import { OtpType } from "@prisma/client";
-import { Resend } from "resend";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_LENGTH = 6;
-const resend = new Resend(process.env.RESEND_API_KEY);
+const sesClient = new SESClient({
+    region: process.env.AWS_SES_REGION || process.env.AWS_REGION,
+    credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+        ? {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        }
+        : undefined,
+});
+
+async function sendEmailViaSes(toEmail: string, subject: string, htmlBody: string) {
+    const fromEmail = process.env.AWS_SES_FROM_EMAIL;
+    if (!fromEmail) {
+        throw new Error("AWS_SES_FROM_EMAIL is not configured");
+    }
+
+    const command = new SendEmailCommand({
+        Source: fromEmail,
+        Destination: {
+            ToAddresses: [toEmail],
+        },
+        Message: {
+            Subject: {
+                Data: subject,
+                Charset: "UTF-8",
+            },
+            Body: {
+                Html: {
+                    Data: htmlBody,
+                    Charset: "UTF-8",
+                },
+            },
+        },
+    });
+
+    return sesClient.send(command);
+}
 
 export function generateOtpCode(length: number = OTP_LENGTH): string {
     const digits = '0123456789';
@@ -112,13 +148,12 @@ export async function getLatestValidOtp(userId: string, type: OtpType) {
     });
 }
 
-export async function sendOtpEmail (email: string, otp: string){
+export async function sendOtpEmail(email: string, otp: string) {
     try {
-        const { data, error } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-            to: [email],
-            subject: 'Your OTP code is here',
-            html: `
+        return await sendEmailViaSes(
+            email,
+            "Your OTP code is here",
+            `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #333;">OTP Verification</h2>
               <p>Your OTP code is:</p>
@@ -128,12 +163,8 @@ export async function sendOtpEmail (email: string, otp: string){
               <p style="color: #666;">This code is valid for 5 minutes.</p>
               <p style="color: #666; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
             </div>
-          `,
-        });
-        if (error) {
-            throw new Error(`Failed to send email: ${error}`);
-        }
-        return data;
+            `
+        );
     } catch (error) {
         throw new Error(`Failed to send email: ${error}`);
     }
@@ -141,11 +172,10 @@ export async function sendOtpEmail (email: string, otp: string){
 
 export async function sendAccountBlockedEmail(email: string) {
     try {
-        const { data, error } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-            to: [email],
-            subject: 'Your Realbro account has been blocked',
-            html: `
+        return await sendEmailViaSes(
+            email,
+            "Your Realbro account has been blocked",
+            `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #333;">Account Blocked</h2>
               <p>Your Realbro account has been blocked by the admin team.</p>
@@ -153,13 +183,8 @@ export async function sendAccountBlockedEmail(email: string) {
               <p style="margin: 0;">Email: <strong>contact@realbro.io</strong></p>
               <p style="margin: 8px 0 0;">Phone: <strong>8085671414</strong></p>
             </div>
-          `,
-        });
-
-        if (error) {
-            throw new Error(`Failed to send blocked email: ${error}`);
-        }
-        return data;
+            `
+        );
     } catch (error) {
         throw new Error(`Failed to send blocked email: ${error}`);
     }

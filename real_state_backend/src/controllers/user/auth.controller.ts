@@ -279,7 +279,7 @@ export async function signin(req: Request, res: Response) {
             where: isEmail ? { email: normalizedIdentifier } : { phone: normalizedIdentifier }
         })
         if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" })
+            return res.status(404).json({ message: "User not found, please signup" })
         }
 
         if (user.isBlocked) {

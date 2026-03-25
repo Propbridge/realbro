@@ -1,6 +1,6 @@
 # Real State Backend (Broker App)
 
-Node.js/Express backend for the broker app. Includes user authentication (JWT + refresh tokens), OTP via Resend, user profiles, and property listing APIs (with media management). API docs are available via Swagger UI.
+Node.js/Express backend for the broker app. Includes user authentication (JWT + refresh tokens), OTP via AWS SES, user profiles, and property listing APIs (with media management). API docs are available via Swagger UI.
 
 ## Tech stack
 
@@ -9,7 +9,7 @@ Node.js/Express backend for the broker app. Includes user authentication (JWT + 
 - **Prisma** + **PostgreSQL**
 - **JWT auth** (access + refresh tokens)
 - **Zod** validation middleware
-- **Resend** for email OTP
+- **AWS SES** for email OTP
 - **Swagger UI** at `/docs` (OpenAPI spec in `docs/openapi.yaml`)
 
 ## Prerequisites
@@ -41,8 +41,10 @@ Minimum required variables:
 - **DATABASE_URL**: Postgres connection string
 - **ACCESS_TOKEN_SECRET**: secret for access JWT signing
 - **REFRESH_TOKEN_SECRET**: secret for refresh JWT signing
-- **RESEND_API_KEY**: required to send OTP email
-- **RESEND_FROM_EMAIL**: sender email (optional; defaults to `onboarding@resend.dev`)
+- **AWS_SES_REGION**: AWS SES region (example: `us-east-1`)
+- **AWS_SES_FROM_EMAIL**: verified sender email/domain in SES
+- **AWS_ACCESS_KEY_ID**: IAM access key with SES send permission
+- **AWS_SECRET_ACCESS_KEY**: IAM secret for the above access key
 
 ### 3) Prisma: generate client + sync schema
 
@@ -150,7 +152,7 @@ From `package.json`:
 - `src/controllers/`: request handlers (business logic)
 - `src/middleware/`: auth + zod validate middleware
 - `src/validators/`: Zod schemas
-- `src/services/`: OTP + external services (Resend)
+- `src/services/`: OTP + external services (AWS SES)
 - `src/utils/`: JWT/password helpers
 - `prisma/schema.prisma`: database schema
 
