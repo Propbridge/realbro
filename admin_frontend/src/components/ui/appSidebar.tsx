@@ -50,7 +50,7 @@ const items = [
         children: [
             { title: "User's Listings", url: "/property/all-listings", icon: Home },
             { title: "Exclusive Listings", url: "/property/exclusive-listings", icon: Crown },
-            { title: "Pending Approvals", url: "/property/pending-approvals", icon: Clock4Icon, roles: ["SUPER_ADMIN"] as const },
+            { title: "Pending Approvals", url: "/property/pending-approvals", icon: Clock4Icon, roles: ["SUPER_ADMIN","ADMIN"] as const },
         ],
     },
     {
@@ -67,7 +67,7 @@ const items = [
     { title: "Requirement Board", url: "/requirement-board", icon: ClipboardList },
     { title: "Financials", url: "#", icon: WalletIcon, children: [
         { title: "Manage Transactions", url: "/financials", icon: WalletCardsIcon },
-        { title: "Gem Approvals", url: "/financials/gem-approvals", icon: Watch, roles: ["SUPER_ADMIN"] as const },
+        { title: "Gem Approvals", url: "/financials/gem-approvals", icon: Watch, roles: ["SUPER_ADMIN","ADMIN"] as const },
     ] },
     { title: "Banner Management", url: "/banner-management", icon: Image },
     { title: "Support Tickets", url: "/support-tickets", icon: LucideTickets },

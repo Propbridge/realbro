@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AxiosError } from "axios"
 import { api } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Check, Clock, Eye, Gem, X } from "lucide-react"
@@ -201,10 +202,15 @@ function ViewPropertyButton({ propertyId, hasProperty }: { propertyId: string | 
 }
 
 function ActionsCell({ row, onSuccess }: { row: GemApprovalRow; onSuccess: () => void }) {
+    const { user } = useAuth()
     const [loading, setLoading] = useState<"approve" | "reject" | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [approveOpen, setApproveOpen] = useState(false)
     const [rejectOpen, setRejectOpen] = useState(false)
+
+    if (user?.role !== "SUPER_ADMIN") {
+        return <span className="text-gray-400 text-sm">—</span>
+    }
 
     const { id: requestId, requestType, userName, userEmail, amount, baseGems, referralGems, referralEmail } = row
     const isRedemption = requestType === "REDEMPTION"
