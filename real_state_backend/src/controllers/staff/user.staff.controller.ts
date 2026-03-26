@@ -246,7 +246,7 @@ export async function unblockUser(req: Request, res: Response) {
 
         const existingUser = await prisma.user.findUnique({
             where: { id },
-            select: { id: true, isBlocked: true },
+            select: { id: true, isBlocked: true, email: true },
         });
 
         if (!existingUser) {
@@ -267,12 +267,8 @@ export async function unblockUser(req: Request, res: Response) {
         });
 
         try {
-            const unblockedUser = await prisma.user.findUnique({
-                where: { id },
-                select: { email: true },
-            });
-            if (unblockedUser?.email) {
-                await sendAccountUnblockedEmail(unblockedUser.email);
+            if (existingUser.email) {
+                await sendAccountUnblockedEmail(existingUser.email);
             }
         } catch (emailError) {
             console.error("Unblock user email error:", emailError);
