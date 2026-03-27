@@ -69,6 +69,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Admin RealBros",
   description: "Admin page of real bros",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
