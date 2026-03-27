@@ -8,10 +8,23 @@ import { hashPassword } from "../../utils/password";
 export async function createStaff(req: Request, res: Response) {
     try {
         const { firstName, lastName, age, gender, phone, email, password, role } = req.body as createStaffInput;
-        if (email) {
-            const existingStaff = await prisma.staff.findUnique({ where: { email } });
+        if (email || phone) {
+            const existingStaff = await prisma.staff.findFirst({
+                where: {
+                    OR: [
+                        ...(email ? [{ email }] : []),
+                        ...(phone ? [{ phone }] : [])
+                    ]
+                }
+            });
+
             if (existingStaff) {
-                return res.status(400).json({ message: "Email already exists" });
+                if (existingStaff.email === email) {
+                    return res.status(400).json({ message: "Email already exists" });
+                }
+                if (existingStaff.phone === phone) {
+                    return res.status(400).json({ message: "Phone number already exists" });
+                }
             }
         }
         if (!password) {
@@ -85,8 +98,8 @@ export async function getStaffById(req: Request, res: Response) {
 };
 
 export async function blockStaff(req: Request, res: Response) {
-    try{
-        const {id} = req.params;
+    try {
+        const { id } = req.params;
         await prisma.staff.update({
             where: { id: id as string },
             data: { isActive: false },
@@ -99,8 +112,8 @@ export async function blockStaff(req: Request, res: Response) {
 };
 
 export async function unblockStaff(req: Request, res: Response) {
-    try{
-        const {id} = req.params;
+    try {
+        const { id } = req.params;
         await prisma.staff.update({
             where: { id: id as string },
             data: { isActive: true },
@@ -113,8 +126,8 @@ export async function unblockStaff(req: Request, res: Response) {
 };
 
 export async function deleteStaff(req: Request, res: Response) {
-    try{
-        const {id} = req.params;
+    try {
+        const { id } = req.params;
         await prisma.staff.delete({
             where: { id: id as string },
         });
@@ -126,7 +139,7 @@ export async function deleteStaff(req: Request, res: Response) {
 };
 
 export async function getAllStaffs(req: Request, res: Response) {
-    try{
+    try {
         const staffs = await prisma.staff.findMany();
         return res.status(200).json({ staffs });
     } catch (error) {
