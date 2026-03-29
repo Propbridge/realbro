@@ -21,6 +21,13 @@ export const updateStaffSchema = z.object({
     role: z.enum(["SUPER_ADMIN", "ADMIN", "VIEWER", "CUSTOMER_SUPPORT"]),
 });
 
+export const updateSuperAdminSchema = z.object({
+    firstName: z.string().min(2, "First name must be atleast 2 characters").optional(),
+    lastName: z.string().min(2, "last name must be atleast 2 characters").optional(),
+    email: z.string().email("Invalid email").optional(),
+    password: z.string().min(6, "password must be atleast 6 characters long").optional(),
+});
+
 
 export const staffSigninSchema = z.object({
     email: z.email("Invalid email"),

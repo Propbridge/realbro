@@ -5,6 +5,13 @@ import { Request, Response } from "express";
 import { createStaffInput, updateStaffInput } from "../../validators/staff.validator";
 import { hashPassword } from "../../utils/password";
 
+type SuperAdminUpdateInput = {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+};
+
 export async function createStaff(req: Request, res: Response) {
     try {
         const { firstName, lastName, age, gender, phone, email, password, role } = req.body as createStaffInput;
@@ -144,6 +151,111 @@ export async function getAllStaffs(req: Request, res: Response) {
         return res.status(200).json({ staffs });
     } catch (error) {
         console.error("Get all staffs error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export async function getSuperAdminById(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+
+        let superAdmin = await prisma.superAdmin.findUnique({
+            where: { id: id as string },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                isActive: true,
+                createdAt: true,
+            },
+        });
+
+        // Support ids coming from staff rows with SUPER_ADMIN role by mapping through email.
+        if (!superAdmin) {
+            const staffSuperAdmin = await prisma.staff.findUnique({
+                where: { id: id as string },
+                select: { email: true, role: true },
+            });
+
+            if (staffSuperAdmin?.role === "SUPER_ADMIN") {
+                superAdmin = await prisma.superAdmin.findUnique({
+                    where: { email: staffSuperAdmin.email },
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        isActive: true,
+                        createdAt: true,
+                    },
+                });
+            }
+        }
+
+        if (!superAdmin) {
+            return res.status(404).json({ message: "Super admin not found" });
+        }
+
+        return res.status(200).json({ superAdmin });
+    } catch (error) {
+        console.error("Get super admin by id error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export async function updateSuperAdmin(req: Request, res: Response) {
+    try {
+        const { id } = req.params;
+        const { firstName, lastName, email, password } = req.body as SuperAdminUpdateInput;
+
+        let targetId = id as string;
+        let existing = await prisma.superAdmin.findUnique({
+            where: { id: targetId },
+            select: { id: true },
+        });
+
+        // Support ids coming from staff rows with SUPER_ADMIN role by mapping through email.
+        if (!existing) {
+            const staffSuperAdmin = await prisma.staff.findUnique({
+                where: { id: targetId },
+                select: { email: true, role: true },
+            });
+
+            if (staffSuperAdmin?.role === "SUPER_ADMIN") {
+                const mappedSuperAdmin = await prisma.superAdmin.findUnique({
+                    where: { email: staffSuperAdmin.email },
+                    select: { id: true },
+                });
+                if (mappedSuperAdmin) {
+                    targetId = mappedSuperAdmin.id;
+                    existing = mappedSuperAdmin;
+                }
+            }
+        }
+
+        if (!existing) {
+            return res.status(404).json({ message: "Super admin not found" });
+        }
+
+        const updateData: { firstName?: string; lastName?: string; email?: string; passwordHash?: string } = {
+            firstName,
+            lastName,
+            email,
+        };
+
+        if (password) {
+            updateData.passwordHash = await hashPassword(password);
+        }
+
+        await prisma.superAdmin.update({
+            where: { id: targetId },
+            data: updateData,
+        });
+
+        return res.status(200).json({ message: "Super admin updated successfully" });
+    } catch (error) {
+        console.error("Update super admin error:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };
