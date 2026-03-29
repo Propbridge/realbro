@@ -1076,3 +1076,48 @@ export async function deleteUserListingProperty(req: Request, res: Response) {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export async function deleteExclusiveProperty(req: Request, res: Response) {
+    try {
+        const role = req.user?.role;
+        if (!req.user?.id || !role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (role !== "SUPER_ADMIN") {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const { exclusivePropertyId } = req.params as { exclusivePropertyId: string };
+        if (!exclusivePropertyId) {
+            return res.status(400).json({ message: "exclusivePropertyId is required" });
+        }
+
+        const existing = await prisma.exclusiveProperty.findUnique({
+            where: { id: exclusivePropertyId },
+            select: { id: true },
+        });
+
+        if (!existing) {
+            return res.status(404).json({ message: "Exclusive property not found" });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.appointment.deleteMany({
+                where: { exclusivePropertyId },
+            });
+
+            await tx.savedExclusiveProperty.deleteMany({
+                where: { exclusivePropertyId },
+            });
+
+            await tx.exclusiveProperty.delete({
+                where: { id: exclusivePropertyId },
+            });
+        });
+
+        return res.status(200).json({ message: "Exclusive property deleted successfully" });
+    } catch (error) {
+        console.error("Delete exclusive property error:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}

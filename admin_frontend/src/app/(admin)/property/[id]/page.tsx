@@ -194,6 +194,12 @@ export default function PropertyPage() {
     const handleDelete = async () => {
         if (!property) return
         try {
+            if (property.exclusiveProperty?.id) {
+                await api.delete(`/staff/properties/exclusive/${property.exclusiveProperty.id}`)
+                router.push("/property/exclusive-listings")
+                return
+            }
+
             await api.delete(`/staff/properties/${property.id}`)
             router.push("/property/all-listings")
         } catch (err) {

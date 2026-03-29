@@ -78,8 +78,8 @@ export function PropertyActionBar({
     const soldToRealbroNotExclusive = isBoughtByRealbro && !isExclusive
     const listUnlistEnabled = !soldToRealbroNotExclusive && !!onListUnlist
     const markSoldEnabled = !soldToRealbroNotExclusive && !!onMarkSold
-    /** Delete only when NOT exclusive and NOT sold to RealBro */
-    const deleteEnabled = !isExclusive && !isBoughtByRealbro && !!onDelete
+    /** Delete action is available across property types for super admin only */
+    const deleteEnabled = isSuperAdmin && !!onDelete
 
     const editHref = isExclusive && exclusivePropertyId
         ? `/property/exclusive-listings/${exclusivePropertyId}/edit`
